@@ -1,7 +1,7 @@
 # ComfyUI-TBG-Takeaways
 # TGB’s ComfyUI Development Takeaways
 
-A curated collection of reusable ComfyUI nodes developed by TGB during Patreon projects. These sidecodes encapsulate key breakthroughs in model sampling, noise scheduling, and image refinement for enhanced stable diffusion workflows.
+A curated collection of reusable ComfyUI nodes developed by TGB. These sidecodes encapsulate key breakthroughs in model sampling, noise scheduling, and image refinement for enhanced stable diffusion workflows.
 
 ---
 
