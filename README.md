@@ -17,7 +17,7 @@ A curated collection of reusable ComfyUI nodes developed by TGB. These sidecodes
 ## Included Nodes
 
 - **TBG_FluxKontextStabilizer** *(New!)*  
-  Developed specifically for the **TBG ETUR** (Enhanced Tiled Upscaler and Refiner), this node maintains exact positioning of reference images in final outputs. It stabilizes spatial context during tiled upscaling and refinement to ensure high-fidelity alignment and image coherence.
+  Developed specifically for the **TBG ETUR** (Enhanced Tiled Upscaler and Refiner), this node maintains exact positioning of reference images in final outputs. It stabilizes spatial context during tiled upscaling and refinement to ensure high-fidelity alignment and image coherence. Stay with euler beta and more than 16 steps.
 
 - **ModelSamplingFluxGradual**  
   Implements gradual flux-based sampling control for smoother transitions during model sampling - ModelSamplingFluxGradual interpolates between ModelSamplingFlux and ModelSamplingFlux Normalized. This allows for the best of both approaches.
