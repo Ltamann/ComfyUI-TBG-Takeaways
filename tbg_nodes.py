@@ -91,12 +91,15 @@ class TBG_FluxKontextStabilizer:
 
     def stabilize(self, sigmas):
         # Consistent Position Sigma
-        sigma_a = torch.tensor([
+        sigma_b = torch.tensor([
             1.0000, 0.9910, 0.9753, 0.9547, 0.9295, 0.8994,
             0.8643, 0.8236, 0.7770, 0.7238, 0.6636, 0.5965,
             0.5223, 0.4419, 0.3571, 0.2711, 0.1877, 0.1130,
             0.0527, 0.0138, 0.0000
         ])
+        sigma_a = torch.tensor([1.0000, 0.9836, 0.9660, 0.9471, 0.9266, 0.9045, 0.8805, 0.8543, 0.8257,
+            0.7942, 0.7595, 0.7210, 0.6780, 0.6297, 0.5751, 0.5128, 0.4412, 0.3579,
+            0.2598, 0.1425, 0.0000])
 
         # Get first 6 steps from sigma_a
         head = sigma_a[:6]
