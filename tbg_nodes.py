@@ -97,9 +97,10 @@ class TBG_FluxKontextStabilizer:
             0.5223, 0.4419, 0.3571, 0.2711, 0.1877, 0.1130,
             0.0527, 0.0138, 0.0000
         ])
+
         sigma_a = torch.tensor([1.0000, 0.9836, 0.9660, 0.9471, 0.9266, 0.9045, 0.8805, 0.8543, 0.8257,
-            0.7942, 0.7595, 0.7210, 0.6780, 0.6297, 0.5751, 0.5128, 0.4412, 0.3579,
-            0.2598, 0.1425, 0.0000])
+                0.7942, 0.7595, 0.7210, 0.6780, 0.6297, 0.5751, 0.5128, 0.4412, 0.3579,
+                0.2598, 0.1425, 0.0000])
 
         # Get first 6 steps from sigma_a
         head = sigma_a[:6]
@@ -494,9 +495,82 @@ class LogSigmaStepSamplerNode:
         )
 
 
+import random
+
+
+class PromptBatchGenerator:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "total_frames_in_seconds": ("INT", {"default": 81, "min": 1, "max": 30000, "step": 1}),
+                "frames_per_batch": ("INT", {"default": 81, "min": 1, "max": 120, "step": 1}),
+                "text_input_1": ("STRING", {"default": "", "multiline": True}),
+                "text_input_2": ("STRING", {"default": "", "multiline": True}),
+                "text_input_3": ("STRING", {"default": "", "multiline": True}),
+                "text_input_4": ("STRING", {"default": "", "multiline": True}),
+                "text_input_5": ("STRING", {"default": "", "multiline": True}),
+                "strength_1": ("INT", {"default": 5, "min": 1, "max": 10, "step": 1}),
+                "strength_2": ("INT", {"default": 5, "min": 1, "max": 10, "step": 1}),
+                "strength_3": ("INT", {"default": 5, "min": 1, "max": 10, "step": 1}),
+                "strength_4": ("INT", {"default": 5, "min": 1, "max": 10, "step": 1}),
+                "strength_5": ("INT", {"default": 5, "min": 1, "max": 10, "step": 1})
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("prompt_string",)
+    FUNCTION = "generate_prompt_batches"
+    CATEGORY = "PromptGeneration"
+    DESCRIPTION = "Generates batches of prompts based on text inputs and their strength values"
+
+    def generate_prompt_batches(self, total_frames_in_seconds, frames_per_batch,
+                                text_input_1, text_input_2, text_input_3, text_input_4, text_input_5,
+                                strength_1, strength_2, strength_3, strength_4, strength_5):
+
+
+        # Calculate total batches
+        total_batches = total_frames_in_seconds // frames_per_batch
+        if total_frames_in_seconds % frames_per_batch > 0:
+            total_batches += 1
+
+        # Collect active text inputs (non-empty) with their strengths
+        text_inputs = []
+        if text_input_1.strip():
+            text_inputs.append((text_input_1.strip(), strength_1))
+        if text_input_2.strip():
+            text_inputs.append((text_input_2.strip(), strength_2))
+        if text_input_3.strip():
+            text_inputs.append((text_input_3.strip(), strength_3))
+        if text_input_4.strip():
+            text_inputs.append((text_input_4.strip(), strength_4))
+        if text_input_5.strip():
+            text_inputs.append((text_input_5.strip(), strength_5))
+
+        if not text_inputs:
+            return ("",)  # Return empty string if no inputs
+
+        # Create weighted list based on strength values
+        weighted_prompts = []
+        for text, strength in text_inputs:
+            weighted_prompts.extend([text] * strength)
+
+        # Generate batch strings
+        batch_strings = []
+        for batch_num in range(total_batches):
+            # Randomly select a prompt for this batch based on weights
+            selected_prompt = random.choice(weighted_prompts)
+            batch_strings.append(selected_prompt)
+
+        # Join all batches with pipe separator
+        final_prompt_string = " | ".join(batch_strings)
+
+        return (final_prompt_string,)
+
 
 
 NODE_CLASS_MAPPINGS = {
+    "PromptBatchGenerator": PromptBatchGenerator,
     "ModelSamplingFluxGradual": ModelSamplingFluxGradual,
     "PolyExponentialSigmaAdder": PolyExponentialSigmaAdder,
     "BasicSchedulerNormalized": BasicSchedulerNormalized,
@@ -506,6 +580,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "PromptBatchGenerator": "Prompt Batch Generator",
     "ModelSamplingFluxGradual": "Model Sampling Flux Gradual",
     "PolyExponentialSigmaAdder": "PolyExponential Sigma Adder",
     "BasicSchedulerNormalized": "Basic Scheduler Normalized",
