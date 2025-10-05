@@ -17,19 +17,14 @@ A curated collection of reusable ComfyUI nodes developed by TGB. These sidecodes
 ## Included Nodes
 - **VAE Decode ColorFix** *(New!)*  
   VAE Decode (ColorFix) - Fast, Color-Accurate Decoding for Flux Models
-
 Solves the brightness shift and washed-out color problem that affects Flux models 
 when using the standard VAE Decode node.
-
 WHY THIS NODE?
---------------
 Standard VAE Decode produces washed-out, brightened images with Flux models because 
 it processes the entire image at once, causing normalization drift in the VAE decoder. 
 This node uses tiled processing to maintain accurate colors while offering speed 
 optimizations not available in the standard VAE Decode (Tiled) node.
-
 HOW IT WORKS
-------------
 The node breaks your image into smaller tiles during decode. Smaller tiles keep the 
 VAE's normalization statistics closer to training values, preventing color shift. 
 By default, it uses a single-pass approach (3x faster than standard tiled decode) 
