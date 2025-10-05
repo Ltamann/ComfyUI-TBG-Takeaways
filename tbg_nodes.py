@@ -74,7 +74,9 @@ import comfy
 import math
 from comfy.samplers import KSAMPLER
 from comfy.samplers import KSAMPLER
+import comfy.utils
 import torch
+from comfy import model_management
 
 class TBG_FluxKontextStabilizer:
     @classmethod
@@ -87,7 +89,7 @@ class TBG_FluxKontextStabilizer:
 
     RETURN_TYPES = ("SIGMAS",)
     FUNCTION = "stabilize"
-    CATEGORY = "Custom"
+    CATEGORY = "TBG/Takeaways"
 
     def stabilize(self, sigmas):
         # Consistent Position Sigma
@@ -126,7 +128,7 @@ class ModelSamplingFluxGradual:
                       } 
                }
     RETURN_TYPES = ("MODEL",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "TBG/Takeaways"
 
     FUNCTION = "patch"
 
@@ -175,7 +177,7 @@ class  PolyExponentialSigmaAdder:
                       } 
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "TBG/Takeaways"
 
     FUNCTION = "get_sigmas"
 
@@ -220,7 +222,7 @@ class BasicSchedulerNormalized:
                       }
                }
     RETURN_TYPES = ("SIGMAS",)
-    CATEGORY = "sampling/custom_sampling/schedulers"
+    CATEGORY = "TBG/Takeaways"
 
     FUNCTION = "get_sigmas"
 
@@ -370,7 +372,7 @@ def Log_Sigma_Sampler(
     )
 
 class LogSigmaSamplerNode:
-    CATEGORY = "sampling/custom_sampling"
+    CATEGORY = "TBG/Takeaways"
     RETURN_TYPES = ("SAMPLER",)
     FUNCTION = "go"
 
@@ -454,7 +456,7 @@ def Log_Sigma_Sampler_Steps(
     )
 
 class LogSigmaStepSamplerNode:
-    CATEGORY = "sampling/custom_sampling"
+    CATEGORY = "TBG/Takeaways"
     RETURN_TYPES = ("SAMPLER",)
     FUNCTION = "go"
 
@@ -521,7 +523,7 @@ class PromptBatchGenerator:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("prompt_string",)
     FUNCTION = "generate_prompt_batches"
-    CATEGORY = "PromptGeneration"
+    CATEGORY = "TBG/Takeaways"
     DESCRIPTION = "Generates batches of prompts based on text inputs and their strength values"
 
     def generate_prompt_batches(self, total_frames_in_seconds, frames_per_batch,
@@ -569,7 +571,84 @@ class PromptBatchGenerator:
 
 
 
+
+
+
+class VAEDecodeColorFix:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "samples": ("LATENT", {"tooltip": "The latent to be decoded."}),
+                "vae": ("VAE", {"tooltip": "The VAE model used for decoding the latent."}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    OUTPUT_TOOLTIPS = ("The decoded image with accurate colors.",)
+    FUNCTION = "decode"
+    CATEGORY = "TBG/Takeaways"
+    DESCRIPTION = "Fast Flux VAE decode with accurate colors using optimized tiled processing."
+
+    def decode(self, vae, samples):
+        tile_size = 256
+        fast_mode = True
+        compression = vae.spacial_compression_decode()
+        tile_latent = tile_size // compression
+        overlap = tile_latent // 4  # 25% overlap for smooth blending
+
+        if fast_mode:
+            # Single-pass tiled decode (3x faster)
+            images = self.decode_single_pass(vae, samples["samples"], tile_latent, overlap)
+        else:
+            # Use the original 3-pass tiled decode for maximum quality
+            images = vae.decode_tiled(samples["samples"], tile_x=tile_latent, tile_y=tile_latent, overlap=overlap)
+
+        if len(images.shape) == 5:  # Combine batches
+            images = images.reshape(-1, images.shape[-3], images.shape[-2], images.shape[-1])
+
+        return (images,)
+
+    def decode_single_pass(self, vae, samples, tile_x, overlap):
+        """Single-pass tiled decode - 3x faster than the original 3-pass method"""
+        import comfy.utils
+        from comfy.utils import ProgressBar
+
+        vae.throw_exception_if_invalid()
+
+        # Calculate steps for progress bar
+        steps = samples.shape[0] * comfy.utils.get_tiled_scale_steps(samples.shape[3], samples.shape[2], tile_x, tile_x, overlap)
+        #pbar = ProgressBar(steps)
+
+        # Load VAE to GPU
+        memory_used = vae.memory_used_decode(samples.shape, vae.vae_dtype)
+        model_management.load_models_gpu([vae.patcher], memory_required=memory_used, force_full_load=vae.disable_offload)
+
+        # Decode function
+        decode_fn = lambda a: vae.first_stage_model.decode(a.to(vae.vae_dtype).to(vae.device)).float()
+
+        # Single tiled_scale pass (instead of 3 passes)
+        output = comfy.utils.tiled_scale(
+            samples,
+            decode_fn,
+            tile_x,
+            tile_x,  # Use square tiles
+            overlap,
+            upscale_amount=vae.upscale_ratio,
+            output_device=vae.output_device,
+            #pbar=pbar
+        )
+
+        # Apply process_output and move channels
+        output = vae.process_output(output)
+        return output.movedim(1, -1)
+
+
+
+
 NODE_CLASS_MAPPINGS = {
+
+    "VAEDecodeColorFix": VAEDecodeColorFix,
     "PromptBatchGenerator": PromptBatchGenerator,
     "ModelSamplingFluxGradual": ModelSamplingFluxGradual,
     "PolyExponentialSigmaAdder": PolyExponentialSigmaAdder,
@@ -580,6 +659,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "VAEDecodeColorFix": "VAE Decode ColorFix",
     "PromptBatchGenerator": "Prompt Batch Generator",
     "ModelSamplingFluxGradual": "Model Sampling Flux Gradual",
     "PolyExponentialSigmaAdder": "PolyExponential Sigma Adder",
