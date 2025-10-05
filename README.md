@@ -15,6 +15,25 @@ A curated collection of reusable ComfyUI nodes developed by TGB. These sidecodes
 ---
 
 ## Included Nodes
+- **VAE Decode ColorFix** *(New!)*  
+  VAE Decode (ColorFix) - Fast, Color-Accurate Decoding for Flux Models
+
+Solves the brightness shift and washed-out color problem that affects Flux models 
+when using the standard VAE Decode node.
+
+WHY THIS NODE?
+--------------
+Standard VAE Decode produces washed-out, brightened images with Flux models because 
+it processes the entire image at once, causing normalization drift in the VAE decoder. 
+This node uses tiled processing to maintain accurate colors while offering speed 
+optimizations not available in the standard VAE Decode (Tiled) node.
+
+HOW IT WORKS
+------------
+The node breaks your image into smaller tiles during decode. Smaller tiles keep the 
+VAE's normalization statistics closer to training values, preventing color shift. 
+By default, it uses a single-pass approach (3x faster than standard tiled decode) 
+while maintaining color accuracy.
 
 - **PromptBatchGenerator** *(New!)*  
   Ever get super frustrated with those 81-frame batch videos where the same prompt just keeps repeating over and over? 😫 I know I did! Like, every 81 frames I’d have to smile or move my hands exactly the same way because the prompts were crazy repetitive. No no, that’s not fun for me.
