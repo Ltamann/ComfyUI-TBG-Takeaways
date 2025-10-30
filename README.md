@@ -3,7 +3,8 @@
 
 A curated set of reusable ComfyUI nodes created by TGB, these sidecodes capture major advances in model sampling, noise scheduling, and image refinement to enhance stable diffusion workflows. All nodes in this pack are extracted from micro-developments created during the development of TBG ETUR. They’ve been turned into standalone “micro nodes” for testing purposes and for anyone who enjoys experimenting with them.
 ---
-[Visit TBG enhanced tiled upscaler and refiner pro]([https://github.com/Ltamann/ComfyUI-TBG-ETUR])
+[Visit TBG enhanced tiled upscaler and refiner pro](https://github.com/Ltamann/ComfyUI-TBG-ETUR)
+
 
 
 ## Table of Contents
