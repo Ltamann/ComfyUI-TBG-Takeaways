@@ -59,7 +59,7 @@ The PolyExponential Sigma Adder introduces a resolution-independent curve, ensu
   These nodes are ideal for users looking to experiment with or customize the core diffusion response for artistic or technical purposes.
   
 - **TBG_Preview_Sender_WebSocket**
-  This node lets you send images directly from memory to memory, right through ComfyUI’s websocket — no need to save anything to disk. Just plug it in as an output for your images, and you can instantly fetch the previews      from another web interface or app connected to your ComfyUI websocket.
+  This node lets you send images directly from memory to memory, right through ComfyUI’s websocket no need to save anything to disk. Just plug it in as an output for your images, and you can instantly fetch the previews      from another web interface or app connected to your ComfyUI websocket.
   
 [Detailed Inforamtion on my Patreon: ](https://www.patreon.com/c/TB_LAAR)
 ---
