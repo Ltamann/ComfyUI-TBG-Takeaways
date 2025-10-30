@@ -1,9 +1,11 @@
 # ComfyUI-TBG-Takeaways
 # TGB’s ComfyUI Development Takeaways
 
-A curated collection of reusable ComfyUI nodes developed by TGB. These sidecodes encapsulate key breakthroughs in model sampling, noise scheduling, and image refinement for enhanced stable diffusion workflows.
-
+A curated set of reusable ComfyUI nodes created by TGB, these sidecodes capture major advances in model sampling, noise scheduling, and image refinement to enhance stable diffusion workflows. All nodes in this pack are extracted from micro-developments created during the development of TBG ETUR. They’ve been turned into standalone “micro nodes” for testing purposes and for anyone who enjoys experimenting with them.
 ---
+[Visit TBG enhanced tiled upscaler and refiner pro](https://github.com/Ltamann/ComfyUI-TBG-ETUR)
+
+
 
 ## Table of Contents
 
@@ -57,6 +59,9 @@ The PolyExponential Sigma Adder introduces a resolution-independent curve, ensu
   LogSigmaSamplerNode enables manipulation of this curve directly, allowing users to enhance fine details, introduce natural imperfections, or soften the final image by shifting how the model interprets noise over time.
   This approach gives precise control over the model's behavior—similar in effect to techniques used by Detail Deamon or Lying Sigmas.
   These nodes are ideal for users looking to experiment with or customize the core diffusion response for artistic or technical purposes.
+  
+- **TBG_Preview_Sender_WebSocket**
+  This node lets you send images directly from memory to memory, right through ComfyUI’s websocket no need to save anything to disk. Just plug it in as an output for your images, and you can instantly fetch the previews      from another web interface or app connected to your ComfyUI websocket. [TBG_Preview_Sender_WebSocket](https://www.patreon.com/posts/new-tbg-takeaway-142394428)
   
 [Detailed Inforamtion on my Patreon: ](https://www.patreon.com/c/TB_LAAR)
 ---
