@@ -62,6 +62,9 @@ The PolyExponential Sigma Adder introduces a resolution-independent curve, ensu
   
 - **TBG_Preview_Sender_WebSocket**
   This node lets you send images directly from memory to memory, right through ComfyUI’s websocket no need to save anything to disk. Just plug it in as an output for your images, and you can instantly fetch the previews      from another web interface or app connected to your ComfyUI websocket. [TBG_Preview_Sender_WebSocket](https://www.patreon.com/posts/new-tbg-takeaway-142394428)
+
+- **TBG Hex Cone Mask**
+Generates a hexagonal cone pattern mask for variable denoise strength across an image. Creates gradients from center (maximum denoise) to edges (minimum denoise) of each hexagon. Control the gradient zones with inner_fraction (start of gradient), outer_fraction (end of gradient), and curve_power (gradient steepness). Outputs both a visual IMAGE of the pattern and a MASK for denoise control. Perfect for creating organic, non-uniform enhancement patterns. [TBG Hex Cone Mask]([https://www.patreon.com/posts/new-tbg-takeaway-142394428](https://www.patreon.com/posts/tbg-take-aways-142316016))
   
 [Detailed Inforamtion on my Patreon: ](https://www.patreon.com/c/TB_LAAR)
 ---
