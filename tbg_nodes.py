@@ -784,10 +784,36 @@ class HexConeDenoiseMask:
         return (image_tensor, mask_tensor)
 
 
+
+
 """
-FLUX.2 JSON Prompt Generator Node for ComfyUI
-Production-ready custom node for generating structured JSON prompts
+FLUX.2 JSON Prompt Generator Node for ComfyUI - Enhanced Version
+Production-ready custom node with comprehensive tooltips and professional presets
 Based on Black Forest Labs FLUX.2 Prompting Guide
+https://docs.bfl.ai/guides/prompting_guide_flux2
+
+Author: Custom Node for ComfyUI
+Version: 2.0 Enhanced
+Date: November 2025
+
+Features:
+- 18 Camera presets with auto-configuration
+- 50+ Professional style presets
+- Comprehensive tooltips for user guidance
+- Scene and background preset dropdowns
+- Individual subject color palettes
+- Support for all FLUX.2 JSON schema parameters
+- Text override system for all dropdowns
+- Three output formats: JSON, formatted prompt, camera summary
+"""
+
+import json
+from typing import Dict, Any, Tuple
+
+"""
+FLUX.2 JSON Prompt Generator Node for ComfyUI - Enhanced & Hardened
+- Handles empty / legacy values safely
+- Only writes JSON keys for actually defined values
 """
 
 import json
@@ -796,502 +822,821 @@ from typing import Dict, Any, Tuple
 
 class FLUX2JSONPromptGenerator:
     """
-    Generate structured JSON prompts for FLUX.2 image generation.
-    Provides extensive presets with text override capabilities.
+    Enhanced FLUX.2 JSON Prompt Generator with professional presets and tooltips.
+    Supports all FLUX.2 JSON schema parameters with comprehensive examples.
     """
 
-    # Camera Models - 30+ professional cameras
+    # ==================== CAMERA PRESETS ====================
+
+    CAMERA_PRESETS = [
+        "None / Manual Configuration",
+        # High-End Professional
+        "Sony A7IV - 85mm f/5.6 ISO200 (Product/Portrait)",
+        "Hasselblad X2D - 80mm f/2.8 ISO100 (High-end Fashion)",
+        "Canon EOS R5 - 24-70mm f/4 ISO400 (Versatile Pro)",
+        "Nikon Z9 - 70-200mm f/2.8 ISO800 (Sports/Action)",
+        "Leica M11 - 50mm f/2 ISO100 (Street Photography)",
+        # Medium Format
+        "Phase One XF IQ4 - 80mm f/5.6 ISO100 (Commercial Studio)",
+        "Fujifilm GFX 100 II - 110mm f/2 ISO200 (Fashion Editorial)",
+        "Hasselblad 907X - 90mm f/3.5 ISO64 (Fine Art)",
+        # Cinema Cameras
+        "ARRI Alexa Mini LF - 35mm f/2.8 ISO800 (Cinematic)",
+        "RED Komodo 6K - 50mm f/1.8 ISO1600 (Film Production)",
+        # Vintage/Film Simulation
+        "Kodak Ektachrome 64 - 35mm f/5.6 ISO64 (Expired Film Look)",
+        "Kodak Portra 400 - 50mm f/2.8 ISO400 (Film Photography)",
+        "Polaroid SX-70 - Built-in f/8 ISO160 (Instant Film)",
+        # Digital Era Styles
+        "2000s Canon PowerShot - 28mm f/2.8 ISO200 (Digicam Aesthetic)",
+        "iPhone 15 Pro Max - 24mm f/1.78 ISO80 (Mobile Photography)",
+        # Specialized
+        "DJI Inspire 3 - 24mm f/2.8 ISO400 (Aerial Photography)",
+        "GoPro Hero 12 - 16mm f/2.8 ISO400 (Action POV)",
+        "Macro Lens Setup - 105mm f/2.8 ISO200 (Macro Photography)",
+    ]
+
+    # ==================== CAMERA MODELS ====================
+
     CAMERA_MODELS = [
+        "",  # explicit "unset" to avoid validation errors
         "None",
-        "Sony A7IV",
-        "Sony A7R V",
-        "Sony A1",
-        "Canon EOS R5",
-        "Canon EOS R6 Mark II",
-        "Canon 5D Mark IV",
-        "Nikon Z9",
-        "Nikon Z8",
-        "Nikon D850",
-        "Fujifilm X-T5",
-        "Fujifilm GFX 100 II",
-        "Hasselblad X2D",
-        "Hasselblad 907X",
-        "Leica M11",
-        "Leica Q3",
-        "Phase One XF IQ4",
-        "Pentax 645Z",
-        "Panasonic Lumix S5 II",
-        "Panasonic GH6",
-        "Olympus OM-1",
-        "RED Komodo 6K",
-        "ARRI Alexa Mini LF",
-        "Blackmagic Pocket 6K",
-        "iPhone 15 Pro Max",
-        "Google Pixel 8 Pro",
-        "DJI Inspire 3",
-        "GoPro Hero 12",
-        "Polaroid SX-70",
-        "Kodak Ektar H35",
-        "Lomography LC-A+",
-        "Custom (use text input)"
+        "Sony A7IV", "Sony A7R V", "Sony A1", "Sony A9 III",
+        "Canon EOS R5", "Canon EOS R6 Mark II", "Canon 5D Mark IV", "Canon EOS R3",
+        "Nikon Z9", "Nikon Z8", "Nikon D850", "Nikon Z6 III",
+        "Fujifilm X-T5", "Fujifilm GFX 100 II", "Fujifilm X-H2S",
+        "Hasselblad X2D", "Hasselblad 907X", "Hasselblad H6D-100c",
+        "Leica M11", "Leica Q3", "Leica SL3",
+        "Phase One XF IQ4", "Pentax 645Z",
+        "Panasonic Lumix S5 II", "Panasonic GH6", "Olympus OM-1",
+        "RED Komodo 6K", "ARRI Alexa Mini LF", "Blackmagic Pocket 6K",
+        "iPhone 15 Pro Max", "Google Pixel 8 Pro", "Samsung Galaxy S24 Ultra",
+        "DJI Inspire 3", "GoPro Hero 12",
+        "Polaroid SX-70", "Kodak Ektar H35", "Lomography LC-A+",
+        "Custom"
     ]
 
-    # Camera Angles - 10+ professional angles
+    # ==================== CAMERA ANGLES ====================
+
     CAMERA_ANGLES = [
+        "",
         "None",
-        "Eye level",
-        "High angle",
-        "Low angle",
-        "Bird's eye view",
-        "Worm's eye view",
-        "Dutch angle / Tilted",
-        "Over the shoulder",
-        "Point of view (POV)",
-        "Aerial view",
-        "Ground level",
-        "Three-quarter view",
-        "Profile view",
-        "Custom (use text input)"
+        "Eye level (neutral perspective)",
+        "High angle (looking down)",
+        "Low angle (looking up, heroic)",
+        "Bird's eye view (directly overhead)",
+        "Worm's eye view (ground level looking up)",
+        "Dutch angle / Tilted (dynamic tension)",
+        "Over the shoulder (conversational)",
+        "Point of view / POV (first person)",
+        "Aerial view (elevated perspective)",
+        "Ground level (intimate low angle)",
+        "Three-quarter view (classic portrait)",
+        "Profile view (side perspective)",
+        "Slightly elevated (editorial standard)",
+        "Custom"
     ]
 
-    # Camera Distances - 10+ professional distances
+    # ==================== CAMERA DISTANCES ====================
+
     CAMERA_DISTANCES = [
+        "",
         "None",
-        "Extreme close-up",
-        "Close-up",
-        "Medium close-up",
-        "Medium shot",
-        "Medium full shot",
-        "Full shot",
-        "Wide shot",
-        "Extreme wide shot",
-        "Establishing shot",
-        "Long shot",
-        "Macro",
-        "Custom (use text input)"
+        "Extreme close-up (detail focus)",
+        "Close-up (face/product detail)",
+        "Medium close-up (head and shoulders)",
+        "Medium shot (waist up)",
+        "Medium full shot (knee level)",
+        "Full shot (entire subject)",
+        "Wide shot (subject in environment)",
+        "Extreme wide shot (landscape)",
+        "Establishing shot (scene setter)",
+        "Long shot (distant perspective)",
+        "Macro (extreme detail)",
+        "Intimate distance (personal space)",
+        "Custom"
     ]
 
-    # Focus Types - 10+ focus settings
+    # ==================== FOCUS TYPES ====================
+
     FOCUS_TYPES = [
+        "",
         "None",
-        "Sharp focus throughout",
-        "Shallow depth of field",
-        "Deep depth of field",
-        "Soft focus",
-        "Rack focus",
-        "Tilt-shift focus",
-        "Bokeh background",
-        "Subject in focus, background blur",
-        "Foreground blur, subject sharp",
-        "Split focus",
-        "Selective focus",
-        "Custom (use text input)"
+        "Sharp focus throughout (everything crisp)",
+        "Shallow depth of field (background blur)",
+        "Deep depth of field (everything sharp)",
+        "Soft focus (dreamy romantic)",
+        "Rack focus (shift focus subject)",
+        "Tilt-shift focus (miniature effect)",
+        "Bokeh background (aesthetic blur)",
+        "Subject in focus, background blur (portrait)",
+        "Foreground blur, subject sharp (depth)",
+        "Split focus (multiple focus points)",
+        "Selective focus (spotlight effect)",
+        "Sharp focus on steam rising from coffee and mug details",
+        "Custom"
     ]
 
-    # F-Numbers - All standard aperture values
+    # ==================== F-NUMBERS ====================
+
     F_NUMBERS = [
+        "",
         "None",
-        "f/1.2", "f/1.4", "f/1.8", "f/2.0", "f/2.8", "f/4.0",
-        "f/5.6", "f/8.0", "f/11", "f/16", "f/22", "f/32",
-        "Custom (use text input)"
+        "f/1.2 (ultra shallow DOF)",
+        "f/1.4 (very shallow DOF)",
+        "f/1.8 (portrait standard)",
+        "f/2.0 (low light portrait)",
+        "f/2.8 (versatile shallow)",
+        "f/4.0 (balanced DOF)",
+        "f/5.6 (product standard)",
+        "f/8.0 (landscape standard)",
+        "f/11 (deep DOF)",
+        "f/16 (architectural)",
+        "f/22 (maximum DOF)",
+        "f/32 (extreme DOF)",
+        "Custom"
     ]
 
-    # ISO Values - 50 to 2000
+    # ==================== ISO VALUES ====================
+
     ISO_VALUES = [
+        "",
         "None",
-        "50", "100", "200", "400", "800", "1600", "2000",
-        "Custom (use text input)"
+        "50 (studio perfect light)",
+        "64 (medium format base)",
+        "100 (bright daylight)",
+        "200 (studio/outdoors)",
+        "400 (versatile general)",
+        "800 (low light capable)",
+        "1600 (night/indoor)",
+        "2000 (extreme low light)",
+        "Custom"
     ]
 
-    # Lens Types - Professional lens options
+    # ==================== LENS TYPES ====================
+
     LENS_TYPES = [
+        "",
         "None",
-        "24-70mm at 35mm",
-        "50mm prime",
-        "85mm portrait lens",
-        "35mm spherical lens",
+        "14mm ultra wide angle",
+        "16-35mm wide zoom",
         "24mm wide angle",
-        "70-200mm telephoto",
-        "14mm ultra wide",
+        "24-70mm at 35mm (standard zoom)",
+        "35mm spherical lens",
+        "50mm prime (normal)",
+        "85mm portrait lens",
         "105mm macro",
         "135mm portrait",
-        "16-35mm wide zoom",
+        "70-200mm telephoto",
         "100-400mm super telephoto",
         "8mm fisheye",
         "Tilt-shift lens",
-        "Vintage lens",
-        "Anamorphic lens",
-        "Custom (use text input)"
+        "Vintage lens (character)",
+        "Anamorphic lens (cinematic)",
+        "Custom"
     ]
 
-    # Style Presets - 20+ professional styles
+    # ==================== COMPREHENSIVE STYLE PRESETS ====================
+
     STYLE_PRESETS = [
+        "",
         "None / Custom",
-        # Photorealistic Styles
+
+        # === PHOTOREALISTIC STYLES ===
         "Ultra-realistic product photography with commercial quality",
-        "Modern digital photography - clean sharp high dynamic range",
-        "2000s digicam style - early digital camera candid flash photography",
-        "80s vintage photo - film grain warm color cast soft focus",
-        "Analog film photography - shot on Kodak Portra 400 natural grain",
-        "Cinematic photography - shot on ARRI Alexa film-like color grading",
-        "Fashion editorial photography - high contrast vogue style",
-        "Street photography - candid documentary style natural lighting",
-        "Studio portrait photography - professional lighting clean background",
-        "Lifestyle photography - natural authentic candid moments",
+        "Modern digital photography - shot on Sony A7IV, clean sharp, high dynamic range",
+        "Photorealistic 3D render quality with perfect lighting and surfaces",
+        "Professional editorial photography - magazine quality sharp detailed",
+        "Documentary photography - authentic natural candid realistic",
 
-        # CGI & Renders
-        "Photorealistic 3D render - Octane render ray-traced lighting",
-        "Architectural visualization - Unreal Engine 5 photorealistic render",
-        "Product CGI render - studio lighting perfect surfaces",
-        "Pixar-style 3D animation - stylized cartoon render",
-        "Cyberpunk CGI aesthetic - neon lighting futuristic render",
+        # === VINTAGE & FILM STYLES ===
+        "2000s digicam style - early digital camera, slight noise, flash photography, candid",
+        "80s vintage photo - film grain, warm color cast, soft focus, nostalgic",
+        "Analog film photography - shot on Kodak Portra 400, natural grain, organic colors",
+        "Cross-processed Ektachrome 64 - expired film from 1987, extreme color shifts, cyan-magenta split, heavy grain",
+        "Kodachrome 1960s - vintage saturated colors, warm tones, rich reds and blues",
+        "Black and white film - Ilford HP5 Plus, classic grain, high contrast, timeless",
+        "Instant film photography - Polaroid aesthetic, soft colors, square format, nostalgic",
+        "Medium format film - Hasselblad 500CM, Kodak Portra 160, classic analog quality, smooth tones",
 
-        # Commercial & Design
-        "Commercial advertising photography - clean professional studio",
-        "Luxury brand photography - high-end elegant sophisticated",
-        "E-commerce product photography - white background clean",
-        "Food photography - appetizing professional styling",
-        "Beauty product photography - soft glamorous lighting",
+        # === CINEMATIC & FILM PRODUCTION ===
+        "Cinematic photography - shot on ARRI Alexa, film-like color grading, anamorphic aesthetic",
+        "Film noir style - high contrast black and white, dramatic shadows, moody atmospheric",
+        "Technicolor aesthetic - vibrant saturated colors, classic Hollywood golden age",
+        "Wes Anderson style - symmetrical composition, pastel color palette, centered framing",
 
-        # Artistic Styles
-        "Fine art photography - museum quality artistic composition",
-        "Surrealist photography - dreamlike ethereal artistic",
-        "Minimalist photography - clean simple negative space",
-        "Abstract photography - experimental artistic conceptual",
-        "Documentary photography - photojournalism authentic storytelling",
+        # === FASHION & EDITORIAL ===
+        "Fashion editorial photography - high contrast, vogue style, dramatic lighting",
+        "High fashion runway photography - dynamic movement, professional lighting, editorial quality",
+        "Fashion magazine spread - high fashion editorial styling, sophisticated composition",
+        "Luxury fashion photography - elegant, sophisticated, premium quality, refined aesthetic",
+        "Street fashion photography - candid urban style, authentic natural lighting",
 
-        # Magazine & Editorial
-        "Magazine cover editorial - professional layout typography",
-        "Fashion magazine spread - high fashion editorial styling",
-        "Travel magazine photography - stunning landscape editorial",
-        "National Geographic style - nature documentary photography",
-        "Architectural Digest style - interior design photography",
+        # === COMMERCIAL & PRODUCT ===
+        "Commercial advertising photography - clean professional studio, product focused",
+        "Luxury brand photography - high-end elegant sophisticated premium quality",
+        "E-commerce product photography - white background, clean professional, web optimized",
+        "Beauty product photography - soft glamorous lighting, elegant sophisticated",
+        "Food photography - appetizing professional styling, shallow DOF, mouth-watering",
+        "Automotive photography - sleek dynamic lighting, reflective surfaces, powerful composition",
+        "Tech product photography - clean modern minimalist, precise lighting, sharp details",
 
-        # Vintage & Film
-        "Cross-processed Ektachrome 64 - expired film color shifts",
-        "Kodachrome 1960s - vintage saturated colors warm tones",
-        "Black and white film - Ilford HP5 classic grain",
-        "Instant film photography - Polaroid aesthetic soft colors",
-        "Medium format film - Hasselblad classic analog quality"
+        # === CGI & 3D RENDERS ===
+        "Photorealistic 3D render - Octane render, ray-traced lighting, perfect surfaces",
+        "Architectural visualization - Unreal Engine 5, photorealistic render, accurate materials",
+        "Product CGI render - studio lighting, perfect surfaces, commercial quality",
+        "Pixar-style 3D animation - stylized cartoon render, vibrant colors, appealing characters",
+        "Cyberpunk CGI aesthetic - neon lighting, futuristic render, high-tech atmosphere",
+        "Blender Cycles render - photorealistic materials, physically accurate lighting",
+
+        # === ARCHITECTURAL & INTERIOR ===
+        "Architectural photography - Architectural Digest style, interior design, natural lighting",
+        "Real estate photography - bright inviting, wide angle, HDR processed",
+        "Interior design photography - styled professional, balanced lighting, magazine quality",
+        "Architectural exterior - golden hour lighting, dramatic sky, professional composition",
+
+        # === ARTISTIC & CREATIVE ===
+        "Fine art photography - museum quality, artistic composition, intentional aesthetic",
+        "Surrealist photography - dreamlike, ethereal, artistic, Salvador Dali inspired",
+        "Minimalist photography - clean simple, negative space, zen aesthetic",
+        "Abstract photography - experimental, artistic, conceptual, non-representational",
+        "Conceptual art photography - thought-provoking, symbolic, artistic narrative",
+
+        # === PORTRAIT STYLES ===
+        "Studio portrait photography - professional lighting, clean background, headshot quality",
+        "Environmental portrait - subject in context, natural setting, storytelling",
+        "Glamour photography - soft romantic lighting, elegant beautiful, refined",
+        "Lifestyle photography - natural authentic, candid moments, relatable realistic",
+        "Character portrait - personality focused, dramatic lighting, storytelling",
+
+        # === SPECIALIZED PHOTOGRAPHY ===
+        "Street photography - candid documentary style, natural lighting, authentic urban life",
+        "Documentary photography - photojournalism, authentic storytelling, reportage style",
+        "National Geographic style - nature documentary photography, stunning wildlife, environmental",
+        "Travel magazine photography - stunning landscape editorial, cultural authentic, wanderlust",
+        "Sports photography - dynamic action, frozen motion, dramatic peak moment",
+        "Concert photography - dynamic stage lighting, motion energy, live performance",
+
+        # === MAGAZINE & EDITORIAL ===
+        "Magazine cover editorial - professional layout, typography integration, newsstand quality",
+        "Vogue editorial style - high fashion, dramatic lighting, sophisticated composition",
+        "GQ magazine style - masculine sophisticated, clean professional, editorial quality",
+        "Rolling Stone photography - music editorial, dramatic portrait, iconic style",
+
+        # === COMIC & ILLUSTRATION STYLES ===
+        "Classic superhero comic - bold colors, dynamic action, halftone dots, comic book aesthetic",
+        "Manga style illustration - Japanese comic aesthetic, screentone shading, dramatic angles",
+        "Graphic novel style - sophisticated illustration, cinematic panels, artistic narrative",
     ]
 
-    # Lighting Presets
+    # ==================== LIGHTING PRESETS ====================
+
     LIGHTING_PRESETS = [
+        "",
         "None / Custom",
-        "Natural window light - soft diffused",
-        "Golden hour sunset lighting - warm backlit",
-        "Studio three-point lighting - professional setup",
-        "Soft box lighting - diffused even coverage",
-        "Hard directional light - strong shadows dramatic",
-        "Rim lighting - backlit edge highlight",
-        "Low-key lighting - dark moody shadows",
-        "High-key lighting - bright airy minimal shadows",
-        "Overhead diffused lighting - flat even coverage",
-        "Side lighting - dramatic shadow contrast",
-        "Ring light - beauty lighting even soft",
-        "Neon lighting - colorful artificial urban",
-        "Candlelight - warm flickering natural",
-        "Moonlight - cool blue night lighting",
-        "Overcast daylight - soft shadowless natural"
+        "Natural window light - soft diffused indirect illumination",
+        "Golden hour sunset lighting - warm backlit, long shadows, magical glow",
+        "Blue hour twilight - cool atmospheric, soft even lighting",
+        "Studio three-point lighting - professional setup, key fill rim lights",
+        "Soft box lighting - diffused even coverage, minimal shadows",
+        "Hard directional light - strong shadows, dramatic contrast",
+        "Rim lighting - backlit edge highlight, subject separation",
+        "Low-key lighting - dark moody shadows, dramatic atmosphere",
+        "High-key lighting - bright airy, minimal shadows, clean",
+        "Overhead diffused lighting - flat even coverage, shadowless",
+        "Side lighting - dramatic shadow contrast, sculptural form",
+        "Butterfly lighting - beauty standard, symmetrical nose shadow",
+        "Rembrandt lighting - triangular cheek highlight, classic portrait",
+        "Split lighting - half lit half shadow, dramatic portrait",
+        "Ring light - beauty lighting, even soft, catchlight circles",
+        "Neon lighting - colorful artificial, urban nightlife atmosphere",
+        "Candlelight - warm flickering, natural intimate ambiance",
+        "Moonlight - cool blue, night lighting, mysterious atmosphere",
+        "Overcast daylight - soft shadowless, natural even illumination",
+        "Dappled forest light - filtered through leaves, natural patterns",
+        "Three-point softbox setup creating soft, diffused highlights with no harsh shadows",
+        "Dramatic backlighting and energy radiating outward in waves",
     ]
 
-    # Mood Presets
+    # ==================== MOOD PRESETS ====================
+
     MOOD_PRESETS = [
+        "",
         "None / Custom",
-        "Clean professional minimalist",
-        "Warm inviting cozy",
-        "Cool sophisticated modern",
-        "Dramatic intense moody",
-        "Bright cheerful energetic",
-        "Calm peaceful serene",
-        "Mysterious dark atmospheric",
-        "Romantic soft dreamy",
-        "Bold dynamic powerful",
-        "Elegant refined luxurious",
-        "Rustic authentic organic",
-        "Futuristic sleek high-tech",
-        "Nostalgic vintage retro",
-        "Playful fun whimsical",
-        "Epic cinematic grand"
+        "Clean, professional, minimalist",
+        "Warm, inviting, cozy, comfortable",
+        "Cool, sophisticated, modern, sleek",
+        "Dramatic, intense, moody, powerful",
+        "Bright, cheerful, energetic, vibrant",
+        "Calm, peaceful, serene, tranquil",
+        "Mysterious, dark, atmospheric, enigmatic",
+        "Romantic, soft, dreamy, intimate",
+        "Bold, dynamic, powerful, confident",
+        "Elegant, refined, luxurious, sophisticated",
+        "Rustic, authentic, organic, natural",
+        "Futuristic, sleek, high-tech, modern",
+        "Nostalgic, vintage, retro, timeless",
+        "Playful, fun, whimsical, joyful",
+        "Epic, cinematic, grand, spectacular",
+        "Tense, urgent, dramatic (comic style)",
+        "Victorious, hopeful, triumphant",
     ]
 
-    # Composition Presets
+    # ==================== COMPOSITION PRESETS ====================
+
     COMPOSITION_PRESETS = [
+        "",
         "None / Custom",
-        "Rule of thirds",
-        "Center composition",
-        "Golden ratio",
-        "Symmetrical balance",
-        "Asymmetrical balance",
-        "Leading lines",
-        "Frame within frame",
-        "Negative space",
-        "Diagonal composition",
-        "Pattern repetition",
-        "Depth layering",
-        "Foreground interest"
+        "Rule of thirds (classic balanced)",
+        "Center composition (symmetrical focus)",
+        "Golden ratio (natural harmony)",
+        "Symmetrical balance (mirror perfection)",
+        "Asymmetrical balance (dynamic tension)",
+        "Leading lines (directional flow)",
+        "Frame within frame (natural borders)",
+        "Negative space (minimalist emphasis)",
+        "Diagonal composition (dynamic energy)",
+        "Pattern repetition (rhythmic design)",
+        "Depth layering (foreground mid background)",
+        "Foreground interest (depth anchor)",
+        "Triangular composition (stable dynamic)",
+        "Radial composition (outward flow)",
+        "Juxtaposition (contrasting elements)",
+    ]
+
+    # ==================== SCENE EXAMPLES ====================
+
+    SCENE_EXAMPLES = [
+        "",
+        "Custom scene description",
+        "Professional studio product photography setup with polished concrete surface",
+        "Massive computer server room with sparking circuits and red warning lights flashing on monitors",
+        "Small office with computer monitors displaying code and error messages",
+        "Digital cyberspace environment with floating data cubes and cascading binary code",
+        "Calm server room with soft blue ambient lighting and orderly data streams flowing smoothly",
+        "Urban rooftop at sunset with city skyline in background",
+        "Minimalist white studio with seamless backdrop",
+        "Rustic wooden table with natural window light",
+        "Modern architectural interior with floor-to-ceiling windows",
+        "Outdoor forest clearing with dappled sunlight through trees",
+        "Industrial warehouse with dramatic overhead lighting",
+        "Luxury hotel lobby with marble floors and chandeliers",
+        "Cozy coffee shop interior with warm ambient lighting",
+        "Fashion runway with dramatic spotlights",
+        "Makeup flat lay on marble surface",
+    ]
+
+    # ==================== BACKGROUND EXAMPLES ====================
+
+    BACKGROUND_EXAMPLES = [
+        "",
+        "Custom background",
+        "Polished concrete surface with studio backdrop",
+        "Seamless white studio background",
+        "Dark gradient background fading to black",
+        "Natural bokeh with soft out-of-focus lights",
+        "Urban cityscape with blurred buildings",
+        "Marble surface with subtle veining",
+        "Wooden texture with natural grain",
+        "Solid color backdrop (use color palette)",
+        "Environmental context with depth",
+        "Abstract gradient background",
+        "Textured fabric backdrop",
     ]
 
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                # Scene Description
-                "scene": ("STRING", {
-                    "default": "Professional studio setup",
-                    "multiline": True
+                # ===== CAMERA PRESET =====
+                "camera_preset": (cls.CAMERA_PRESETS, {
+                    "default": "Sony A7IV - 85mm f/5.6 ISO200 (Product/Portrait)",
+                    "tooltip": "Quick camera presets with lens, aperture, and ISO. Select a preset or configure manually below."
                 }),
 
-                # Subject Configuration
-                "subject_count": ("INT", {
-                    "default": 1,
-                    "min": 0,
-                    "max": 10
+                # ===== SCENE CONFIGURATION =====
+                "scene_preset": (cls.SCENE_EXAMPLES, {
+                    "default": "Professional studio product photography setup with polished concrete surface",
+                    "tooltip": "Pre-made scene descriptions or select Custom to write your own."
+                }),
+                "scene": ("STRING", {
+                    "default": "",
+                    "multiline": True,
+                    "tooltip": "Overall scene description. Overrides preset if filled."
+                }),
+
+                # ===== SUBJECT CONFIGURATION =====
+                # Make subject_count STRING to avoid INT validation issues
+                "subject_count": ("STRING", {
+                    "default": "1",
+                    "tooltip": "Number of subjects (0-10). Parsed as integer, invalid values default to 1."
                 }),
                 "subject_1_description": ("STRING", {
-                    "default": "",
-                    "multiline": True
+                    "default": "Minimalist ceramic coffee mug with steam rising from hot coffee inside",
+                    "multiline": True,
+                    "tooltip": "Detailed description of subject 1."
                 }),
                 "subject_1_position": ("STRING", {
-                    "default": "Center foreground"
+                    "default": "Center foreground on polished concrete surface",
+                    "multiline": False,
+                    "tooltip": "Where subject 1 is positioned in frame."
                 }),
                 "subject_1_action": ("STRING", {
-                    "default": ""
+                    "default": "Stationary on surface",
+                    "multiline": False,
+                    "tooltip": "What subject 1 is doing."
+                }),
+                "subject_1_pose": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Optional pose for subject 1."
+                }),
+                "subject_1_color_palette": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Optional: hex colors for subject 1, comma-separated."
                 }),
 
-                # Style Configuration
+                # ===== STYLE CONFIGURATION =====
                 "style_preset": (cls.STYLE_PRESETS, {
-                    "default": "None / Custom"
+                    "default": "Ultra-realistic product photography with commercial quality",
+                    "tooltip": "Photography / art style preset."
                 }),
                 "style_text_override": ("STRING", {
                     "default": "",
-                    "multiline": False
+                    "multiline": True,
+                    "tooltip": "Custom style. Overrides preset if filled."
                 }),
 
-                # Lighting
+                # ===== LIGHTING =====
                 "lighting_preset": (cls.LIGHTING_PRESETS, {
-                    "default": "None / Custom"
+                    "default": "Studio three-point lighting - professional setup, key fill rim lights",
+                    "tooltip": "Lighting setup preset."
                 }),
                 "lighting_text_override": ("STRING", {
                     "default": "",
-                    "multiline": False
+                    "multiline": True,
+                    "tooltip": "Custom lighting description. Overrides preset if filled."
                 }),
 
-                # Mood
+                # ===== MOOD =====
                 "mood_preset": (cls.MOOD_PRESETS, {
-                    "default": "None / Custom"
+                    "default": "Clean, professional, minimalist",
+                    "tooltip": "Emotional tone and atmosphere."
                 }),
                 "mood_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom mood description. Overrides preset if filled."
                 }),
 
-                # Background
+                # ===== BACKGROUND =====
+                "background_preset": (cls.BACKGROUND_EXAMPLES, {
+                    "default": "Polished concrete surface with studio backdrop",
+                    "tooltip": "Background description preset."
+                }),
                 "background": ("STRING", {
-                    "default": "Studio backdrop",
-                    "multiline": True
+                    "default": "",
+                    "multiline": True,
+                    "tooltip": "Background details. Overrides preset if filled."
                 }),
 
-                # Composition
+                # ===== COMPOSITION =====
                 "composition_preset": (cls.COMPOSITION_PRESETS, {
-                    "default": "None / Custom"
+                    "default": "Rule of thirds (classic balanced)",
+                    "tooltip": "Framing and layout technique."
                 }),
                 "composition_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom composition description. Overrides preset if filled."
                 }),
 
-                # Camera Settings
+                # ===== CAMERA SETTINGS =====
                 "camera_model_preset": (cls.CAMERA_MODELS, {
-                    "default": "None"
+                    "default": "Sony A7IV",
+                    "tooltip": "Camera model selection."
                 }),
                 "camera_model_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom camera model. Overrides preset if filled."
                 }),
 
                 "camera_angle_preset": (cls.CAMERA_ANGLES, {
-                    "default": "None"
+                    "default": "High angle (looking down)",
+                    "tooltip": "Camera angle relative to subject."
                 }),
                 "camera_angle_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom camera angle. Overrides preset if filled."
                 }),
 
                 "camera_distance_preset": (cls.CAMERA_DISTANCES, {
-                    "default": "None"
+                    "default": "Medium shot (waist up)",
+                    "tooltip": "How close camera is to subject."
                 }),
                 "camera_distance_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom camera distance. Overrides preset if filled."
                 }),
 
                 "focus_preset": (cls.FOCUS_TYPES, {
-                    "default": "None"
+                    "default": "Sharp focus on steam rising from coffee and mug details",
+                    "tooltip": "Focus and depth of field."
                 }),
                 "focus_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom focus description. Overrides preset if filled."
                 }),
 
                 "lens_preset": (cls.LENS_TYPES, {
-                    "default": "None"
+                    "default": "85mm portrait lens",
+                    "tooltip": "Lens type and focal length."
                 }),
                 "lens_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom lens description. Overrides preset if filled."
                 }),
 
                 "f_number_preset": (cls.F_NUMBERS, {
-                    "default": "None"
+                    "default": "f/5.6 (product standard)",
+                    "tooltip": "Aperture f-stop."
                 }),
                 "f_number_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom f-number. Overrides preset if filled."
                 }),
 
                 "iso_preset": (cls.ISO_VALUES, {
-                    "default": "None"
+                    "default": "200 (studio/outdoors)",
+                    "tooltip": "ISO sensitivity."
                 }),
                 "iso_text_override": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Custom ISO value. Overrides preset if filled."
                 }),
 
-                "lens_mm": ("INT", {
-                    "default": 0,
-                    "min": 0,
-                    "max": 600
+                # lens_mm now STRING to avoid INT validation; parsed manually
+                "lens_mm": ("STRING", {
+                    "default": "0",
+                    "tooltip": "Lens focal length in mm. Parsed as integer; 0 = not specified."
                 }),
 
-                # Color Palette
+                "shutter_speed": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Optional: Shutter speed, e.g. '1/125'."
+                }),
+
+                # ===== COLOR PALETTE =====
                 "color_hex_1": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Primary hex color, e.g. #FF5733."
                 }),
                 "color_hex_2": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Secondary hex color."
                 }),
                 "color_hex_3": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Tertiary hex color."
                 }),
                 "color_hex_4": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Accent hex color 1."
                 }),
                 "color_hex_5": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Accent hex color 2."
+                }),
+
+                # ===== ADVANCED OPTIONS =====
+                "include_shot_on_prefix": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Add 'Shot on [camera]' to formatted output."
+                }),
+
+                "enable_prompt_expansion": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Reserved flag for future prompt enrichment."
                 }),
             },
             "optional": {
-                # Additional Subjects
+                # ===== ADDITIONAL SUBJECTS =====
                 "subject_2_description": ("STRING", {
                     "default": "",
-                    "multiline": True
+                    "multiline": True,
+                    "tooltip": "Subject 2 description."
                 }),
                 "subject_2_position": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Subject 2 position."
                 }),
                 "subject_2_action": ("STRING", {
-                    "default": ""
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Subject 2 action."
                 }),
+                "subject_2_pose": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Subject 2 pose."
+                }),
+                "subject_2_color_palette": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "tooltip": "Subject 2 individual colors."
+                }),
+
                 "subject_3_description": ("STRING", {
                     "default": "",
-                    "multiline": True
+                    "multiline": True,
+                    "tooltip": "Subject 3 description."
                 }),
-                "subject_3_position": ("STRING", {
-                    "default": ""
-                }),
-                "subject_3_action": ("STRING", {
-                    "default": ""
-                }),
+                "subject_3_position": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 3 position"}),
+                "subject_3_action": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 3 action"}),
+                "subject_3_pose": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 3 pose"}),
+                "subject_3_color_palette": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 3 colors"}),
+
                 "subject_4_description": ("STRING", {
                     "default": "",
-                    "multiline": True
+                    "multiline": True,
+                    "tooltip": "Subject 4 description."
                 }),
-                "subject_4_position": ("STRING", {
-                    "default": ""
-                }),
-                "subject_4_action": ("STRING", {
-                    "default": ""
-                }),
+                "subject_4_position": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 4 position"}),
+                "subject_4_action": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 4 action"}),
+                "subject_4_pose": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 4 pose"}),
+                "subject_4_color_palette": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 4 colors"}),
+
                 "subject_5_description": ("STRING", {
                     "default": "",
-                    "multiline": True
+                    "multiline": True,
+                    "tooltip": "Subject 5 description."
                 }),
-                "subject_5_position": ("STRING", {
-                    "default": ""
-                }),
-                "subject_5_action": ("STRING", {
-                    "default": ""
+                "subject_5_position": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 5 position"}),
+                "subject_5_action": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 5 action"}),
+                "subject_5_pose": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 5 pose"}),
+                "subject_5_color_palette": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 5 colors"}),
+
+                # ===== ADVANCED FIELDS =====
+                "additional_json_fields": ("STRING", {
+                    "default": "",
+                    "multiline": True,
+                    "tooltip": "Optional: extra JSON object merged into final output."
                 }),
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING")
-    RETURN_NAMES = ("json_prompt", "formatted_prompt")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_NAMES = ("json_prompt", "formatted_prompt", "camera_settings")
     FUNCTION = "generate_json_prompt"
     CATEGORY = "FLUX2/Prompt Generation"
+    OUTPUT_NODE = False
 
-    def _get_value_or_override(self, preset_value: str, text_override: str, none_values: list = ["None", "None / Custom"]) -> str:
+    # ===== Helper methods =====
+
+    def _apply_camera_preset(self, preset: str) -> Dict[str, str]:
+        """Extract camera settings from preset string."""
+        settings = {
+            "camera_model": "",
+            "lens_mm": 0,
+            "f_number": "",
+            "iso": ""
+        }
+
+        if preset == "None / Manual Configuration":
+            return settings
+
+        parts = preset.split(" - ")
+        if len(parts) < 2:
+            return settings
+
+        settings["camera_model"] = parts[0].strip()
+        spec_part = parts[1].split("(")[0].strip()
+        tokens = spec_part.split()
+
+        for token in tokens:
+            if "mm" in token:
+                try:
+                    settings["lens_mm"] = int(token.replace("mm", ""))
+                except Exception:
+                    pass
+            elif token.startswith("f/"):
+                settings["f_number"] = token
+            elif token.startswith("ISO"):
+                settings["iso"] = token.replace("ISO", "")
+
+        return settings
+
+    def _get_value_or_override(
+        self,
+        preset_value: str,
+        text_override: str,
+        none_values: list = ("", "None", "None / Custom", "Custom", "Custom scene description", "Custom background")
+    ) -> str:
         """
         Returns text override if provided, otherwise returns preset value.
-        Returns empty string if preset is in none_values list.
+        Values in none_values are treated as "unset" and return empty string.
         """
-        # Text override takes priority
-        if text_override and text_override.strip():
-            return text_override.strip()
-
-        # Check if preset is a "none" value
-        if preset_value in none_values:
+        if text_override and str(text_override).strip():
+            return str(text_override).strip()
+        if preset_value in none_values or preset_value is None:
             return ""
+        return str(preset_value)
 
-        return preset_value
+    def _parse_color_palette_string(self, palette_str: str) -> list:
+        """Parse comma-separated hex colors."""
+        if not palette_str or not str(palette_str).strip():
+            return []
+        colors = []
+        for color in str(palette_str).split(","):
+            color = color.strip()
+            if color:
+                if not color.startswith("#"):
+                    color = "#" + color
+                colors.append(color)
+        return colors
 
     def _build_subjects_array(self, subject_count: int, **kwargs) -> list:
-        """
-        Build subjects array from input parameters.
-        """
+        """Build subjects array from input parameters."""
         subjects = []
 
         for i in range(1, subject_count + 1):
             desc_key = f"subject_{i}_description"
             pos_key = f"subject_{i}_position"
             action_key = f"subject_{i}_action"
+            pose_key = f"subject_{i}_pose"
+            color_key = f"subject_{i}_color_palette"
 
-            description = kwargs.get(desc_key, "").strip()
+            description = str(kwargs.get(desc_key, "")).strip()
 
-            # Skip empty subjects
             if not description:
                 continue
 
-            subject = {
-                "description": description
-            }
+            subject = {"description": description}
 
-            position = kwargs.get(pos_key, "").strip()
+            position = str(kwargs.get(pos_key, "")).strip()
             if position:
                 subject["position"] = position
 
-            action = kwargs.get(action_key, "").strip()
+            action = str(kwargs.get(action_key, "")).strip()
             if action:
                 subject["action"] = action
+
+            pose = str(kwargs.get(pose_key, "")).strip()
+            if pose:
+                subject["pose"] = pose
+
+            color_palette = self._parse_color_palette_string(kwargs.get(color_key, ""))
+            if color_palette:
+                subject["color_palette"] = color_palette
 
             subjects.append(subject)
 
         return subjects
 
     def _build_color_palette(self, **kwargs) -> list:
-        """
-        Build color palette array from hex color inputs.
-        """
+        """Build color palette array from hex color inputs."""
         colors = []
 
         for i in range(1, 6):
             color_key = f"color_hex_{i}"
-            color = kwargs.get(color_key, "").strip()
+            color = str(kwargs.get(color_key, "")).strip()
 
             if color:
-                # Ensure color starts with #
                 if not color.startswith("#"):
                     color = "#" + color
                 colors.append(color)
 
         return colors
 
-    def _build_camera_dict(self, **kwargs) -> dict:
-        """
-        Build camera configuration dictionary.
-        """
+    def _safe_int(self, value, default: int, min_val: int = None, max_val: int = None) -> int:
+        """Safely convert value to int; on failure, return default and clamp to [min_val, max_val]."""
+        try:
+            i = int(value)
+        except (TypeError, ValueError):
+            i = default
+        if min_val is not None and i < min_val:
+            i = min_val
+        if max_val is not None and i > max_val:
+            i = max_val
+        return i
+
+    def _build_camera_dict(self, preset_settings: Dict, **kwargs) -> dict:
+        """Build camera configuration dictionary."""
         camera = {}
 
         # Camera angle
@@ -1299,6 +1644,8 @@ class FLUX2JSONPromptGenerator:
             kwargs.get("camera_angle_preset", "None"),
             kwargs.get("camera_angle_text_override", "")
         )
+        if angle and "(" in angle:
+            angle = angle.split("(")[0].strip()
         if angle:
             camera["angle"] = angle
 
@@ -1307,6 +1654,8 @@ class FLUX2JSONPromptGenerator:
             kwargs.get("camera_distance_preset", "None"),
             kwargs.get("camera_distance_text_override", "")
         )
+        if distance and "(" in distance:
+            distance = distance.split("(")[0].strip()
         if distance:
             camera["distance"] = distance
 
@@ -1315,6 +1664,8 @@ class FLUX2JSONPromptGenerator:
             kwargs.get("focus_preset", "None"),
             kwargs.get("focus_text_override", "")
         )
+        if focus and "(" in focus:
+            focus = focus.split("(")[0].strip()
         if focus:
             camera["focus"] = focus
 
@@ -1323,72 +1674,109 @@ class FLUX2JSONPromptGenerator:
             kwargs.get("lens_preset", "None"),
             kwargs.get("lens_text_override", "")
         )
+        if lens and "(" in lens:
+            lens = lens.split("(")[0].strip()
         if lens:
             camera["lens"] = lens
 
-        # Lens mm
+        # Lens mm (from preset or manual input)
         lens_mm = kwargs.get("lens_mm", 0)
+        lens_mm = self._safe_int(lens_mm, preset_settings.get("lens_mm", 0), 0, 600)
         if lens_mm > 0:
             camera["lens-mm"] = lens_mm
 
-        # F-number
+        # F-number (from preset or manual)
         f_number = self._get_value_or_override(
             kwargs.get("f_number_preset", "None"),
             kwargs.get("f_number_text_override", "")
         )
+        if not f_number and preset_settings.get("f_number"):
+            f_number = preset_settings["f_number"]
+        if f_number and "(" in f_number:
+            f_number = f_number.split("(")[0].strip()
         if f_number:
             camera["f-number"] = f_number
 
-        # ISO
+        # ISO (from preset or manual)
         iso = self._get_value_or_override(
             kwargs.get("iso_preset", "None"),
             kwargs.get("iso_text_override", "")
         )
+        if not iso and preset_settings.get("iso"):
+            iso = preset_settings["iso"]
+        if iso and "(" in iso:
+            iso = iso.split("(")[0].strip()
         if iso:
-            camera["ISO"] = int(iso) if iso.isdigit() else iso
+            camera["ISO"] = int(iso) if str(iso).isdigit() else iso
+
+        # Shutter speed
+        shutter = str(kwargs.get("shutter_speed", "")).strip()
+        if shutter:
+            camera["shutter_speed"] = shutter
 
         return camera
 
-    def generate_json_prompt(self, scene: str, subject_count: int,
-                             subject_1_description: str, subject_1_position: str,
-                             subject_1_action: str, style_preset: str,
-                             style_text_override: str, lighting_preset: str,
-                             lighting_text_override: str, mood_preset: str,
-                             mood_text_override: str, background: str,
-                             composition_preset: str, composition_text_override: str,
-                             camera_model_preset: str, camera_model_text_override: str,
-                             camera_angle_preset: str, camera_angle_text_override: str,
-                             camera_distance_preset: str, camera_distance_text_override: str,
-                             focus_preset: str, focus_text_override: str,
-                             lens_preset: str, lens_text_override: str,
-                             f_number_preset: str, f_number_text_override: str,
-                             iso_preset: str, iso_text_override: str,
-                             lens_mm: int, color_hex_1: str, color_hex_2: str,
-                             color_hex_3: str, color_hex_4: str, color_hex_5: str,
-                             **optional_kwargs) -> Tuple[str, str]:
+    # ===== Main execution =====
+
+    def generate_json_prompt(
+        self,
+        camera_preset: str, scene_preset: str, scene: str,
+        subject_count: str, subject_1_description: str,
+        subject_1_position: str, subject_1_action: str,
+        subject_1_pose: str, subject_1_color_palette: str,
+        style_preset: str, style_text_override: str,
+        lighting_preset: str, lighting_text_override: str,
+        mood_preset: str, mood_text_override: str,
+        background_preset: str, background: str,
+        composition_preset: str, composition_text_override: str,
+        camera_model_preset: str, camera_model_text_override: str,
+        camera_angle_preset: str, camera_angle_text_override: str,
+        camera_distance_preset: str, camera_distance_text_override: str,
+        focus_preset: str, focus_text_override: str,
+        lens_preset: str, lens_text_override: str,
+        f_number_preset: str, f_number_text_override: str,
+        iso_preset: str, iso_text_override: str,
+        lens_mm: str, shutter_speed: str,
+        color_hex_1: str, color_hex_2: str, color_hex_3: str,
+        color_hex_4: str, color_hex_5: str,
+        include_shot_on_prefix: bool, enable_prompt_expansion: bool,
+        **optional_kwargs
+    ) -> Tuple[str, str, str]:
         """
         Generate FLUX.2 JSON prompt from inputs.
 
         Returns:
-            Tuple of (json_string, formatted_prompt_string)
+            Tuple of (json_string, formatted_prompt_string, camera_settings_summary)
         """
 
         try:
-            # Build the prompt dictionary
-            prompt_dict = {}
+            # Apply camera preset
+            preset_settings = self._apply_camera_preset(camera_preset)
 
-            # Scene
-            if scene and scene.strip():
-                prompt_dict["scene"] = scene.strip()
+            # Safely parse subject_count and lens_mm
+            subject_count_int = self._safe_int(subject_count, 1, 0, 10)
+            lens_mm_int = self._safe_int(lens_mm, preset_settings.get("lens_mm", 0), 0, 600)
+
+            # Build the prompt dictionary
+            prompt_dict: Dict[str, Any] = {}
+
+            # Scene (with preset support)
+            scene_text = str(scene).strip()
+            if not scene_text and scene_preset not in ("", "Custom scene description", None):
+                scene_text = scene_preset
+            if scene_text:
+                prompt_dict["scene"] = scene_text
 
             # Subjects
             all_kwargs = {
                 "subject_1_description": subject_1_description,
                 "subject_1_position": subject_1_position,
                 "subject_1_action": subject_1_action,
+                "subject_1_pose": subject_1_pose,
+                "subject_1_color_palette": subject_1_color_palette,
                 **optional_kwargs
             }
-            subjects = self._build_subjects_array(subject_count, **all_kwargs)
+            subjects = self._build_subjects_array(subject_count_int, **all_kwargs)
             if subjects:
                 prompt_dict["subjects"] = subjects
 
@@ -1410,6 +1798,8 @@ class FLUX2JSONPromptGenerator:
 
             # Lighting
             lighting = self._get_value_or_override(lighting_preset, lighting_text_override)
+            if lighting and "(" in lighting:
+                lighting = lighting.split("(")[0].strip()
             if lighting:
                 prompt_dict["lighting"] = lighting
 
@@ -1418,12 +1808,17 @@ class FLUX2JSONPromptGenerator:
             if mood:
                 prompt_dict["mood"] = mood
 
-            # Background
-            if background and background.strip():
-                prompt_dict["background"] = background.strip()
+            # Background (with preset support)
+            background_text = str(background).strip()
+            if not background_text and background_preset not in ("", "Custom background", None):
+                background_text = background_preset
+            if background_text:
+                prompt_dict["background"] = background_text
 
             # Composition
             composition = self._get_value_or_override(composition_preset, composition_text_override)
+            if composition and "(" in composition:
+                composition = composition.split("(")[0].strip()
             if composition:
                 prompt_dict["composition"] = composition
 
@@ -1441,87 +1836,118 @@ class FLUX2JSONPromptGenerator:
                 "f_number_text_override": f_number_text_override,
                 "iso_preset": iso_preset,
                 "iso_text_override": iso_text_override,
-                "lens_mm": lens_mm
+                "lens_mm": lens_mm_int,
+                "shutter_speed": shutter_speed
             }
-            camera = self._build_camera_dict(**camera_kwargs)
+            camera = self._build_camera_dict(preset_settings, **camera_kwargs)
             if camera:
                 prompt_dict["camera"] = camera
 
-            # Generate JSON string with proper formatting
+            # Additional JSON fields
+            additional_json = str(optional_kwargs.get("additional_json_fields", "")).strip()
+            if additional_json:
+                try:
+                    additional_dict = json.loads(additional_json)
+                    if isinstance(additional_dict, dict):
+                        prompt_dict.update(additional_dict)
+                except json.JSONDecodeError as e:
+                    print(f"[FLUX2JSONPromptGenerator] Warning: Could not parse additional_json_fields: {e}")
+
+            # Generate JSON string
             json_string = json.dumps(prompt_dict, indent=2, ensure_ascii=False)
 
             # Generate formatted text prompt
             formatted_parts = []
 
-            # Add camera model if specified
-            camera_model = self._get_value_or_override(camera_model_preset, camera_model_text_override)
-            if camera_model:
+            # Camera model (from preset or manual)
+            camera_model = str(camera_model_text_override).strip() if camera_model_text_override else ""
+            if not camera_model and preset_settings.get("camera_model"):
+                camera_model = preset_settings["camera_model"]
+            elif not camera_model and camera_model_preset not in ("", "None", None):
+                camera_model = camera_model_preset
+
+            if camera_model and include_shot_on_prefix:
                 formatted_parts.append(f"Shot on {camera_model}")
 
-            # Add style
+            # Style
             if style:
                 formatted_parts.append(style)
 
-            # Add scene
-            if scene and scene.strip():
-                formatted_parts.append(scene.strip())
+            # Scene
+            if scene_text:
+                formatted_parts.append(scene_text)
 
-            # Add subjects
+            # Subjects
             for i, subject in enumerate(subjects, 1):
-                subject_desc = subject.get("description", "")
-                subject_pos = subject.get("position", "")
-                subject_action = subject.get("action", "")
+                subject_parts = [subject.get("description", "")]
+                if subject.get("position"):
+                    subject_parts.append(f"positioned at {subject['position']}")
+                if subject.get("action"):
+                    subject_parts.append(subject["action"])
+                if subject.get("pose"):
+                    subject_parts.append(subject["pose"])
+                formatted_parts.append(", ".join([p for p in subject_parts if p]))
 
-                subject_text = f"Subject {i}: {subject_desc}"
-                if subject_pos:
-                    subject_text += f" positioned at {subject_pos}"
-                if subject_action:
-                    subject_text += f", {subject_action}"
-                formatted_parts.append(subject_text)
-
-            # Add lighting
+            # Lighting
             if lighting:
                 formatted_parts.append(f"Lighting: {lighting}")
 
-            # Add mood
+            # Mood
             if mood:
                 formatted_parts.append(f"Mood: {mood}")
 
-            # Add composition
+            # Background
+            if background_text:
+                formatted_parts.append(f"Background: {background_text}")
+
+            # Composition
             if composition:
                 formatted_parts.append(f"Composition: {composition}")
 
-            # Add camera details
-            if camera:
-                camera_details = []
-                if "angle" in camera:
-                    camera_details.append(camera["angle"])
-                if "distance" in camera:
-                    camera_details.append(camera["distance"])
-                if "lens" in camera:
-                    camera_details.append(camera["lens"])
-                if "lens-mm" in camera:
-                    camera_details.append(f"{camera['lens-mm']}mm")
-                if "f-number" in camera:
-                    camera_details.append(camera["f-number"])
-                if "ISO" in camera:
-                    camera_details.append(f"ISO {camera['ISO']}")
-
-                if camera_details:
-                    formatted_parts.append(f"Camera: {', '.join(camera_details)}")
-
-            # Add colors
+            # Colors
             if colors:
-                formatted_parts.append(f"Colors: {', '.join(colors)}")
+                formatted_parts.append(f"Color palette: {', '.join(colors)}")
 
-            formatted_prompt = ". ".join(formatted_parts) + "."
+            formatted_prompt = ". ".join(formatted_parts)
+            if formatted_prompt and not formatted_prompt.endswith("."):
+                formatted_prompt += "."
 
-            return (json_string, formatted_prompt)
+            # Camera settings summary
+            camera_summary_parts = []
+            if camera_model:
+                camera_summary_parts.append(f"Camera: {camera_model}")
+            if camera.get("lens"):
+                camera_summary_parts.append(f"Lens: {camera['lens']}")
+            if camera.get("lens-mm"):
+                camera_summary_parts.append(f"{camera['lens-mm']}mm")
+            if camera.get("f-number"):
+                camera_summary_parts.append(camera["f-number"])
+            if camera.get("ISO"):
+                camera_summary_parts.append(f"ISO {camera['ISO']}")
+            if camera.get("shutter_speed"):
+                camera_summary_parts.append(camera["shutter_speed"])
+            if camera.get("angle"):
+                camera_summary_parts.append(f"Angle: {camera['angle']}")
+            if camera.get("distance"):
+                camera_summary_parts.append(f"Distance: {camera['distance']}")
+
+            camera_settings = " | ".join(camera_summary_parts) if camera_summary_parts else "No camera settings specified"
+
+            return (json_string, formatted_prompt, camera_settings)
 
         except Exception as e:
             error_msg = f"Error generating JSON prompt: {str(e)}"
+            import traceback
+            traceback.print_exc()
             print(f"[FLUX2JSONPromptGenerator] {error_msg}")
-            return (json.dumps({"error": error_msg}), error_msg)
+            return (json.dumps({"error": error_msg}), error_msg, error_msg)
+
+
+
+
+
+
+
 
 
 
