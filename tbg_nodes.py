@@ -822,6 +822,35 @@ import json
 from typing import Dict, Any, Tuple
 
 
+"""
+FLUX.2 JSON Prompt Generator Node for ComfyUI - Enhanced & Hardened
+- Preset + override logic fixed
+- Scene/background presets applied correctly
+- Camera presets used as defaults unless overridden
+- JSON only includes actually defined values
+- Additional CLIP-safe text output derived from JSON
+
+Supports: FLUX.2 structured prompting as per Black Forest Labs guide.
+"""
+
+import json
+from typing import Dict, Any, Tuple
+
+
+"""
+FLUX.2 JSON Prompt Generator Node for ComfyUI - Enhanced & Hardened
+- Preset + override logic fixed
+- Scene/background presets applied correctly
+- Camera presets used as defaults unless overridden
+- Camera model stored in JSON and used in all text outputs
+- JSON only includes actually defined values
+- Additional CLIP-safe text output derived from JSON
+"""
+
+import json
+from typing import Dict, Any, Tuple
+
+
 class FLUX2JSONPromptGenerator:
     """
     Enhanced FLUX.2 JSON Prompt Generator with professional presets and tooltips.
@@ -832,27 +861,21 @@ class FLUX2JSONPromptGenerator:
 
     CAMERA_PRESETS = [
         "None / Manual Configuration",
-        # High-End Professional
         "Sony A7IV - 85mm f/5.6 ISO200 (Product/Portrait)",
         "Hasselblad X2D - 80mm f/2.8 ISO100 (High-end Fashion)",
         "Canon EOS R5 - 24-70mm f/4 ISO400 (Versatile Pro)",
         "Nikon Z9 - 70-200mm f/2.8 ISO800 (Sports/Action)",
         "Leica M11 - 50mm f/2 ISO100 (Street Photography)",
-        # Medium Format
         "Phase One XF IQ4 - 80mm f/5.6 ISO100 (Commercial Studio)",
         "Fujifilm GFX 100 II - 110mm f/2 ISO200 (Fashion Editorial)",
         "Hasselblad 907X - 90mm f/3.5 ISO64 (Fine Art)",
-        # Cinema Cameras
         "ARRI Alexa Mini LF - 35mm f/2.8 ISO800 (Cinematic)",
         "RED Komodo 6K - 50mm f/1.8 ISO1600 (Film Production)",
-        # Vintage/Film Simulation
         "Kodak Ektachrome 64 - 35mm f/5.6 ISO64 (Expired Film Look)",
         "Kodak Portra 400 - 50mm f/2.8 ISO400 (Film Photography)",
         "Polaroid SX-70 - Built-in f/8 ISO160 (Instant Film)",
-        # Digital Era Styles
         "2000s Canon PowerShot - 28mm f/2.8 ISO200 (Digicam Aesthetic)",
         "iPhone 15 Pro Max - 24mm f/1.78 ISO80 (Mobile Photography)",
-        # Specialized
         "DJI Inspire 3 - 24mm f/2.8 ISO400 (Aerial Photography)",
         "GoPro Hero 12 - 16mm f/2.8 ISO400 (Action POV)",
         "Macro Lens Setup - 105mm f/2.8 ISO200 (Macro Photography)",
@@ -861,7 +884,7 @@ class FLUX2JSONPromptGenerator:
     # ==================== CAMERA MODELS ====================
 
     CAMERA_MODELS = [
-        "",  # explicit "unset" to avoid validation errors
+        "",
         "None",
         "Sony A7IV", "Sony A7R V", "Sony A1", "Sony A9 III",
         "Canon EOS R5", "Canon EOS R6 Mark II", "Canon 5D Mark IV", "Canon EOS R3",
@@ -998,20 +1021,16 @@ class FLUX2JSONPromptGenerator:
         "Custom"
     ]
 
-    # ==================== COMPREHENSIVE STYLE PRESETS ====================
+    # ==================== STYLE PRESETS ====================
 
     STYLE_PRESETS = [
         "",
         "None / Custom",
-
-        # === PHOTOREALISTIC STYLES ===
         "Ultra-realistic product photography with commercial quality",
         "Modern digital photography - shot on Sony A7IV, clean sharp, high dynamic range",
         "Photorealistic 3D render quality with perfect lighting and surfaces",
         "Professional editorial photography - magazine quality sharp detailed",
         "Documentary photography - authentic natural candid realistic",
-
-        # === VINTAGE & FILM STYLES ===
         "2000s digicam style - early digital camera, slight noise, flash photography, candid",
         "80s vintage photo - film grain, warm color cast, soft focus, nostalgic",
         "Analog film photography - shot on Kodak Portra 400, natural grain, organic colors",
@@ -1020,21 +1039,15 @@ class FLUX2JSONPromptGenerator:
         "Black and white film - Ilford HP5 Plus, classic grain, high contrast, timeless",
         "Instant film photography - Polaroid aesthetic, soft colors, square format, nostalgic",
         "Medium format film - Hasselblad 500CM, Kodak Portra 160, classic analog quality, smooth tones",
-
-        # === CINEMATIC & FILM PRODUCTION ===
         "Cinematic photography - shot on ARRI Alexa, film-like color grading, anamorphic aesthetic",
         "Film noir style - high contrast black and white, dramatic shadows, moody atmospheric",
         "Technicolor aesthetic - vibrant saturated colors, classic Hollywood golden age",
         "Wes Anderson style - symmetrical composition, pastel color palette, centered framing",
-
-        # === FASHION & EDITORIAL ===
         "Fashion editorial photography - high contrast, vogue style, dramatic lighting",
         "High fashion runway photography - dynamic movement, professional lighting, editorial quality",
         "Fashion magazine spread - high fashion editorial styling, sophisticated composition",
         "Luxury fashion photography - elegant, sophisticated, premium quality, refined aesthetic",
         "Street fashion photography - candid urban style, authentic natural lighting",
-
-        # === COMMERCIAL & PRODUCT ===
         "Commercial advertising photography - clean professional studio, product focused",
         "Luxury brand photography - high-end elegant sophisticated premium quality",
         "E-commerce product photography - white background, clean professional, web optimized",
@@ -1042,50 +1055,36 @@ class FLUX2JSONPromptGenerator:
         "Food photography - appetizing professional styling, shallow DOF, mouth-watering",
         "Automotive photography - sleek dynamic lighting, reflective surfaces, powerful composition",
         "Tech product photography - clean modern minimalist, precise lighting, sharp details",
-
-        # === CGI & 3D RENDERS ===
         "Photorealistic 3D render - Octane render, ray-traced lighting, perfect surfaces",
         "Architectural visualization - Unreal Engine 5, photorealistic render, accurate materials",
         "Product CGI render - studio lighting, perfect surfaces, commercial quality",
         "Pixar-style 3D animation - stylized cartoon render, vibrant colors, appealing characters",
         "Cyberpunk CGI aesthetic - neon lighting, futuristic render, high-tech atmosphere",
         "Blender Cycles render - photorealistic materials, physically accurate lighting",
-
-        # === ARCHITECTURAL & INTERIOR ===
         "Architectural photography - Architectural Digest style, interior design, natural lighting",
         "Real estate photography - bright inviting, wide angle, HDR processed",
         "Interior design photography - styled professional, balanced lighting, magazine quality",
         "Architectural exterior - golden hour lighting, dramatic sky, professional composition",
-
-        # === ARTISTIC & CREATIVE ===
         "Fine art photography - museum quality, artistic composition, intentional aesthetic",
         "Surrealist photography - dreamlike, ethereal, artistic, Salvador Dali inspired",
         "Minimalist photography - clean simple, negative space, zen aesthetic",
         "Abstract photography - experimental, artistic, conceptual, non-representational",
         "Conceptual art photography - thought-provoking, symbolic, artistic narrative",
-
-        # === PORTRAIT STYLES ===
         "Studio portrait photography - professional lighting, clean background, headshot quality",
         "Environmental portrait - subject in context, natural setting, storytelling",
         "Glamour photography - soft romantic lighting, elegant beautiful, refined",
         "Lifestyle photography - natural authentic, candid moments, relatable realistic",
         "Character portrait - personality focused, dramatic lighting, storytelling",
-
-        # === SPECIALIZED PHOTOGRAPHY ===
         "Street photography - candid documentary style, natural lighting, authentic urban life",
         "Documentary photography - photojournalism, authentic storytelling, reportage style",
         "National Geographic style - nature documentary photography, stunning wildlife, environmental",
         "Travel magazine photography - stunning landscape editorial, cultural authentic, wanderlust",
         "Sports photography - dynamic action, frozen motion, dramatic peak moment",
         "Concert photography - dynamic stage lighting, motion energy, live performance",
-
-        # === MAGAZINE & EDITORIAL ===
         "Magazine cover editorial - professional layout, typography integration, newsstand quality",
         "Vogue editorial style - high fashion, dramatic lighting, sophisticated composition",
         "GQ magazine style - masculine sophisticated, clean professional, editorial quality",
         "Rolling Stone photography - music editorial, dramatic portrait, iconic style",
-
-        # === COMIC & ILLUSTRATION STYLES ===
         "Classic superhero comic - bold colors, dynamic action, halftone dots, comic book aesthetic",
         "Manga style illustration - Japanese comic aesthetic, screentone shading, dramatic angles",
         "Graphic novel style - sophisticated illustration, cinematic panels, artistic narrative",
@@ -1210,198 +1209,169 @@ class FLUX2JSONPromptGenerator:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                # ===== CAMERA PRESET =====
                 "camera_preset": (cls.CAMERA_PRESETS, {
                     "default": "Sony A7IV - 85mm f/5.6 ISO200 (Product/Portrait)",
-                    "tooltip": "Quick camera presets with lens, aperture, and ISO. Select a preset or configure manually below."
+                    "tooltip": "Camera presets with model, lens, f-number, ISO."
                 }),
-
-                # ===== SCENE CONFIGURATION =====
                 "scene_preset": (cls.SCENE_EXAMPLES, {
                     "default": "Professional studio product photography setup with polished concrete surface",
-                    "tooltip": "Pre-made scene descriptions or select Custom to write your own."
+                    "tooltip": "Pre-made scene descriptions or Custom."
                 }),
                 "scene": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Overall scene description. Overrides preset if filled."
+                    "tooltip": "Scene description. Overrides scene_preset when non-empty."
                 }),
-
-                # ===== SUBJECT CONFIGURATION =====
-                # Make subject_count STRING to avoid INT validation issues
                 "subject_count": ("STRING", {
                     "default": "1",
-                    "tooltip": "Number of subjects (0-10). Parsed as integer, invalid values default to 1."
+                    "tooltip": "Number of subjects (0-10). Parsed as int; invalid values default to 1."
                 }),
                 "subject_1_description": ("STRING", {
                     "default": "Minimalist ceramic coffee mug with steam rising from hot coffee inside",
                     "multiline": True,
-                    "tooltip": "Detailed description of subject 1."
+                    "tooltip": "Subject 1 description."
                 }),
                 "subject_1_position": ("STRING", {
                     "default": "Center foreground on polished concrete surface",
                     "multiline": False,
-                    "tooltip": "Where subject 1 is positioned in frame."
+                    "tooltip": "Subject 1 position in frame."
                 }),
                 "subject_1_action": ("STRING", {
                     "default": "Stationary on surface",
                     "multiline": False,
-                    "tooltip": "What subject 1 is doing."
+                    "tooltip": "Subject 1 action."
                 }),
                 "subject_1_pose": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Optional pose for subject 1."
+                    "tooltip": "Subject 1 pose (optional)."
                 }),
                 "subject_1_color_palette": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Optional: hex colors for subject 1, comma-separated."
+                    "tooltip": "Subject 1 colors (#hex, comma-separated)."
                 }),
-
-                # ===== STYLE CONFIGURATION =====
                 "style_preset": (cls.STYLE_PRESETS, {
                     "default": "Ultra-realistic product photography with commercial quality",
-                    "tooltip": "Photography / art style preset."
+                    "tooltip": "Style preset."
                 }),
                 "style_text_override": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Custom style. Overrides preset if filled."
+                    "tooltip": "Custom style text. Overrides style_preset when non-empty."
                 }),
-
-                # ===== LIGHTING =====
                 "lighting_preset": (cls.LIGHTING_PRESETS, {
                     "default": "Studio three-point lighting - professional setup, key fill rim lights",
-                    "tooltip": "Lighting setup preset."
+                    "tooltip": "Lighting preset."
                 }),
                 "lighting_text_override": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Custom lighting description. Overrides preset if filled."
+                    "tooltip": "Custom lighting. Overrides lighting_preset."
                 }),
-
-                # ===== MOOD =====
                 "mood_preset": (cls.MOOD_PRESETS, {
                     "default": "Clean, professional, minimalist",
-                    "tooltip": "Emotional tone and atmosphere."
+                    "tooltip": "Mood preset."
                 }),
                 "mood_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom mood description. Overrides preset if filled."
+                    "tooltip": "Custom mood. Overrides mood_preset."
                 }),
-
-                # ===== BACKGROUND =====
                 "background_preset": (cls.BACKGROUND_EXAMPLES, {
                     "default": "Polished concrete surface with studio backdrop",
-                    "tooltip": "Background description preset."
+                    "tooltip": "Background preset."
                 }),
                 "background": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Background details. Overrides preset if filled."
+                    "tooltip": "Background description. Overrides background_preset."
                 }),
-
-                # ===== COMPOSITION =====
                 "composition_preset": (cls.COMPOSITION_PRESETS, {
                     "default": "Rule of thirds (classic balanced)",
-                    "tooltip": "Framing and layout technique."
+                    "tooltip": "Composition preset."
                 }),
                 "composition_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom composition description. Overrides preset if filled."
+                    "tooltip": "Custom composition. Overrides preset."
                 }),
-
-                # ===== CAMERA SETTINGS =====
                 "camera_model_preset": (cls.CAMERA_MODELS, {
                     "default": "Sony A7IV",
-                    "tooltip": "Camera model selection."
+                    "tooltip": "Camera model preset."
                 }),
                 "camera_model_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom camera model. Overrides preset if filled."
+                    "tooltip": "Custom camera model. Overrides preset."
                 }),
-
                 "camera_angle_preset": (cls.CAMERA_ANGLES, {
                     "default": "High angle (looking down)",
-                    "tooltip": "Camera angle relative to subject."
+                    "tooltip": "Camera angle preset."
                 }),
                 "camera_angle_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom camera angle. Overrides preset if filled."
+                    "tooltip": "Custom camera angle. Overrides preset."
                 }),
-
                 "camera_distance_preset": (cls.CAMERA_DISTANCES, {
                     "default": "Medium shot (waist up)",
-                    "tooltip": "How close camera is to subject."
+                    "tooltip": "Camera distance preset."
                 }),
                 "camera_distance_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom camera distance. Overrides preset if filled."
+                    "tooltip": "Custom camera distance. Overrides preset."
                 }),
-
                 "focus_preset": (cls.FOCUS_TYPES, {
                     "default": "Sharp focus on steam rising from coffee and mug details",
-                    "tooltip": "Focus and depth of field."
+                    "tooltip": "Focus preset."
                 }),
                 "focus_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom focus description. Overrides preset if filled."
+                    "tooltip": "Custom focus. Overrides preset."
                 }),
-
                 "lens_preset": (cls.LENS_TYPES, {
                     "default": "85mm portrait lens",
-                    "tooltip": "Lens type and focal length."
+                    "tooltip": "Lens preset."
                 }),
                 "lens_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom lens description. Overrides preset if filled."
+                    "tooltip": "Custom lens. Overrides preset."
                 }),
-
                 "f_number_preset": (cls.F_NUMBERS, {
                     "default": "f/5.6 (product standard)",
-                    "tooltip": "Aperture f-stop."
+                    "tooltip": "Aperture preset."
                 }),
                 "f_number_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom f-number. Overrides preset if filled."
+                    "tooltip": "Custom f-number. Overrides preset."
                 }),
-
                 "iso_preset": (cls.ISO_VALUES, {
                     "default": "200 (studio/outdoors)",
-                    "tooltip": "ISO sensitivity."
+                    "tooltip": "ISO preset."
                 }),
                 "iso_text_override": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Custom ISO value. Overrides preset if filled."
+                    "tooltip": "Custom ISO. Overrides preset."
                 }),
-
-                # lens_mm now STRING to avoid INT validation; parsed manually
                 "lens_mm": ("STRING", {
                     "default": "0",
-                    "tooltip": "Lens focal length in mm. Parsed as integer; 0 = not specified."
+                    "tooltip": "Lens focal length in mm. 0 or empty = use preset or omit."
                 }),
-
                 "shutter_speed": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Optional: Shutter speed, e.g. '1/125'."
+                    "tooltip": "Shutter speed (optional), e.g. 1/125."
                 }),
-
-                # ===== COLOR PALETTE =====
                 "color_hex_1": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Primary hex color, e.g. #FF5733."
+                    "tooltip": "Primary hex color (e.g. #FF5733)."
                 }),
                 "color_hex_2": ("STRING", {
                     "default": "",
@@ -1423,24 +1393,20 @@ class FLUX2JSONPromptGenerator:
                     "multiline": False,
                     "tooltip": "Accent hex color 2."
                 }),
-
-                # ===== ADVANCED OPTIONS =====
                 "include_shot_on_prefix": ("BOOLEAN", {
                     "default": True,
-                    "tooltip": "Add 'Shot on [camera]' to formatted output."
+                    "tooltip": "Add 'Shot on [camera]' prefix to formatted prompt."
                 }),
-
                 "enable_prompt_expansion": ("BOOLEAN", {
                     "default": False,
-                    "tooltip": "Reserved flag for future prompt enrichment."
+                    "tooltip": "Reserved for future auto-expansion (no-op now)."
                 }),
             },
             "optional": {
-                # ===== ADDITIONAL SUBJECTS =====
                 "subject_2_description": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Subject 2 description."
+                    "tooltip": "Subject 2 description (optional)."
                 }),
                 "subject_2_position": ("STRING", {
                     "default": "",
@@ -1460,9 +1426,8 @@ class FLUX2JSONPromptGenerator:
                 "subject_2_color_palette": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "tooltip": "Subject 2 individual colors."
+                    "tooltip": "Subject 2 colors."
                 }),
-
                 "subject_3_description": ("STRING", {
                     "default": "",
                     "multiline": True,
@@ -1472,7 +1437,6 @@ class FLUX2JSONPromptGenerator:
                 "subject_3_action": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 3 action"}),
                 "subject_3_pose": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 3 pose"}),
                 "subject_3_color_palette": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 3 colors"}),
-
                 "subject_4_description": ("STRING", {
                     "default": "",
                     "multiline": True,
@@ -1482,7 +1446,6 @@ class FLUX2JSONPromptGenerator:
                 "subject_4_action": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 4 action"}),
                 "subject_4_pose": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 4 pose"}),
                 "subject_4_color_palette": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 4 colors"}),
-
                 "subject_5_description": ("STRING", {
                     "default": "",
                     "multiline": True,
@@ -1492,12 +1455,10 @@ class FLUX2JSONPromptGenerator:
                 "subject_5_action": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 5 action"}),
                 "subject_5_pose": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 5 pose"}),
                 "subject_5_color_palette": ("STRING", {"default": "", "multiline": False, "tooltip": "Subject 5 colors"}),
-
-                # ===== ADVANCED FIELDS =====
                 "additional_json_fields": ("STRING", {
                     "default": "",
                     "multiline": True,
-                    "tooltip": "Optional: extra JSON object merged into final output."
+                    "tooltip": "Extra JSON object merged into final output (advanced)."
                 }),
             }
         }
@@ -1508,28 +1469,18 @@ class FLUX2JSONPromptGenerator:
     CATEGORY = "FLUX2/Prompt Generation"
     OUTPUT_NODE = False
 
-    # ===== Helper methods =====
+    # ===== Helpers =====
 
-    def _apply_camera_preset(self, preset: str) -> Dict[str, str]:
-        """Extract camera settings from preset string."""
-        settings = {
-            "camera_model": "",
-            "lens_mm": 0,
-            "f_number": "",
-            "iso": ""
-        }
-
+    def _apply_camera_preset(self, preset: str) -> Dict[str, Any]:
+        settings = {"camera_model": "", "lens_mm": 0, "f_number": "", "iso": ""}
         if preset == "None / Manual Configuration":
             return settings
-
         parts = preset.split(" - ")
         if len(parts) < 2:
             return settings
-
         settings["camera_model"] = parts[0].strip()
         spec_part = parts[1].split("(")[0].strip()
         tokens = spec_part.split()
-
         for token in tokens:
             if "mm" in token:
                 try:
@@ -1540,20 +1491,149 @@ class FLUX2JSONPromptGenerator:
                 settings["f_number"] = token
             elif token.startswith("ISO"):
                 settings["iso"] = token.replace("ISO", "")
-
         return settings
-    def _build_clip_friendly_prompt_from_dict(self, data: Dict[str, Any]) -> str:
-        """
-        Build a CLIP-safe descriptive prompt from a FLUX.2 JSON dict.
-        Mirrors the JSON->text logic used in the patched CLIPTextEncode node,
-        but runs here so the node can directly output a ready-to-use string.
-        """
-        parts: list[str] = []
 
+    def _get_value_or_override(
+        self,
+        preset_value: str,
+        text_override: str,
+        none_values: tuple = ("", "None", "None / Custom", "Custom", "Custom scene description", "Custom background")
+    ) -> str:
+        if text_override and str(text_override).strip():
+            return str(text_override).strip()
+        if preset_value in none_values or preset_value is None:
+            return ""
+        return str(preset_value)
+
+    def _parse_color_palette_string(self, palette_str: str) -> list:
+        if not palette_str or not str(palette_str).strip():
+            return []
+        colors = []
+        for color in str(palette_str).split(","):
+            color = color.strip()
+            if color:
+                if not color.startswith("#"):
+                    color = "#" + color
+                colors.append(color)
+        return colors
+
+    def _build_subjects_array(self, subject_count: int, **kwargs) -> list:
+        subjects = []
+        for i in range(1, subject_count + 1):
+            desc_key = f"subject_{i}_description"
+            pos_key = f"subject_{i}_position"
+            action_key = f"subject_{i}_action"
+            pose_key = f"subject_{i}_pose"
+            color_key = f"subject_{i}_color_palette"
+            description = str(kwargs.get(desc_key, "")).strip()
+            if not description:
+                continue
+            subject = {"description": description}
+            position = str(kwargs.get(pos_key, "")).strip()
+            if position:
+                subject["position"] = position
+            action = str(kwargs.get(action_key, "")).strip()
+            if action:
+                subject["action"] = action
+            pose = str(kwargs.get(pose_key, "")).strip()
+            if pose:
+                subject["pose"] = pose
+            color_palette = self._parse_color_palette_string(kwargs.get(color_key, ""))
+            if color_palette:
+                subject["color_palette"] = color_palette
+            subjects.append(subject)
+        return subjects
+
+    def _build_color_palette(self, **kwargs) -> list:
+        colors = []
+        for i in range(1, 6):
+            key = f"color_hex_{i}"
+            color = str(kwargs.get(key, "")).strip()
+            if color:
+                if not color.startswith("#"):
+                    color = "#" + color
+                colors.append(color)
+        return colors
+
+    def _safe_int(self, value, default: int, min_val: int = None, max_val: int = None) -> int:
+        try:
+            i = int(value)
+        except (TypeError, ValueError):
+            i = default
+        if min_val is not None and i < min_val:
+            i = min_val
+        if max_val is not None and i > max_val:
+            i = max_val
+        return i
+
+    def _build_camera_dict(self, preset_settings: Dict[str, Any], **kwargs) -> dict:
+        camera: Dict[str, Any] = {}
+        angle = self._get_value_or_override(
+            kwargs.get("camera_angle_preset", "None"),
+            kwargs.get("camera_angle_text_override", "")
+        )
+        if angle and "(" in angle:
+            angle = angle.split("(")[0].strip()
+        if angle:
+            camera["angle"] = angle
+        distance = self._get_value_or_override(
+            kwargs.get("camera_distance_preset", "None"),
+            kwargs.get("camera_distance_text_override", "")
+        )
+        if distance and "(" in distance:
+            distance = distance.split("(")[0].strip()
+        if distance:
+            camera["distance"] = distance
+        focus = self._get_value_or_override(
+            kwargs.get("focus_preset", "None"),
+            kwargs.get("focus_text_override", "")
+        )
+        if focus and "(" in focus:
+            focus = focus.split("(")[0].strip()
+        if focus:
+            camera["focus"] = focus
+        lens = self._get_value_or_override(
+            kwargs.get("lens_preset", "None"),
+            kwargs.get("lens_text_override", "")
+        )
+        if lens and "(" in lens:
+            lens = lens.split("(")[0].strip()
+        if lens:
+            camera["lens"] = lens
+        lens_mm = kwargs.get("lens_mm", 0)
+        lens_mm = self._safe_int(lens_mm, preset_settings.get("lens_mm", 0), 0, 600)
+        if lens_mm > 0:
+            camera["lens-mm"] = lens_mm
+        f_number = self._get_value_or_override(
+            kwargs.get("f_number_preset", "None"),
+            kwargs.get("f_number_text_override", "")
+        )
+        if not f_number and preset_settings.get("f_number"):
+            f_number = preset_settings["f_number"]
+        if f_number and "(" in f_number:
+            f_number = f_number.split("(")[0].strip()
+        if f_number:
+            camera["f-number"] = f_number
+        iso = self._get_value_or_override(
+            kwargs.get("iso_preset", "None"),
+            kwargs.get("iso_text_override", "")
+        )
+        if not iso and preset_settings.get("iso"):
+            iso = preset_settings["iso"]
+        if iso and "(" in iso:
+            iso = iso.split("(")[0].strip()
+        if iso:
+            camera["ISO"] = int(iso) if str(iso).isdigit() else iso
+        shutter = str(kwargs.get("shutter_speed", "")).strip()
+        if shutter:
+            camera["shutter_speed"] = shutter
+        return camera
+
+    def _build_clip_friendly_prompt_from_dict(self, data: Dict[str, Any]) -> str:
+        parts: list[str] = []
         scene = data.get("scene")
         if isinstance(scene, str) and scene.strip():
             parts.append(scene.strip())
-
         subjects = data.get("subjects", [])
         if isinstance(subjects, list) and subjects:
             for idx, s in enumerate(subjects, 1):
@@ -1576,37 +1656,30 @@ class FLUX2JSONPromptGenerator:
                     )
                 if subject_fragments:
                     parts.append(f"Subject {idx}: " + ", ".join(subject_fragments))
-
         style = data.get("style")
         if isinstance(style, str) and style.strip():
             parts.append(style.strip())
-
         color_palette = data.get("color_palette") or data.get("color_scheme")
         if isinstance(color_palette, list) and color_palette:
             colors_text = ", ".join(str(c) for c in color_palette if c)
             if colors_text:
                 parts.append(f"Color palette: {colors_text}")
-
         lighting = data.get("lighting")
         if isinstance(lighting, str) and lighting.strip():
             parts.append("Lighting: " + lighting.strip())
-
         mood = data.get("mood")
         if isinstance(mood, str) and mood.strip():
             parts.append("Mood: " + mood.strip())
-
         background = data.get("background")
         if isinstance(background, str) and background.strip():
             parts.append("Background: " + background.strip())
-
         composition = data.get("composition")
         if isinstance(composition, str) and composition.strip():
-            # drop any explanatory parenthesis to keep it compact
             parts.append("Composition: " + composition.split("(")[0].strip())
-
         camera = data.get("camera")
         if isinstance(camera, dict):
             cam_parts = []
+            cam_model = camera.get("camera_model")
             angle = camera.get("angle")
             distance = camera.get("distance")
             focus = camera.get("focus") or camera.get("depth_of_field")
@@ -1614,7 +1687,8 @@ class FLUX2JSONPromptGenerator:
             lens_mm = camera.get("lens-mm")
             fnum = camera.get("f-number")
             iso = camera.get("ISO")
-
+            if cam_model:
+                cam_parts.append(cam_model)
             if angle:
                 cam_parts.append(angle)
             if distance:
@@ -1629,194 +1703,16 @@ class FLUX2JSONPromptGenerator:
                 cam_parts.append(fnum)
             if iso:
                 cam_parts.append(f"ISO {iso}")
-
             if cam_parts:
                 parts.append("Camera: " + ", ".join(str(c) for c in cam_parts if c))
-
         if not parts:
             return ""
-
         prompt = ". ".join(parts)
         if not prompt.endswith("."):
             prompt += "."
         return prompt
 
-    def _get_value_or_override(
-        self,
-        preset_value: str,
-        text_override: str,
-        none_values: list = ("", "None", "None / Custom", "Custom", "Custom scene description", "Custom background")
-    ) -> str:
-        """
-        Returns text override if provided, otherwise returns preset value.
-        Values in none_values are treated as "unset" and return empty string.
-        """
-        if text_override and str(text_override).strip():
-            return str(text_override).strip()
-        if preset_value in none_values or preset_value is None:
-            return ""
-        return str(preset_value)
-
-    def _parse_color_palette_string(self, palette_str: str) -> list:
-        """Parse comma-separated hex colors."""
-        if not palette_str or not str(palette_str).strip():
-            return []
-        colors = []
-        for color in str(palette_str).split(","):
-            color = color.strip()
-            if color:
-                if not color.startswith("#"):
-                    color = "#" + color
-                colors.append(color)
-        return colors
-
-    def _build_subjects_array(self, subject_count: int, **kwargs) -> list:
-        """Build subjects array from input parameters."""
-        subjects = []
-
-        for i in range(1, subject_count + 1):
-            desc_key = f"subject_{i}_description"
-            pos_key = f"subject_{i}_position"
-            action_key = f"subject_{i}_action"
-            pose_key = f"subject_{i}_pose"
-            color_key = f"subject_{i}_color_palette"
-
-            description = str(kwargs.get(desc_key, "")).strip()
-
-            if not description:
-                continue
-
-            subject = {"description": description}
-
-            position = str(kwargs.get(pos_key, "")).strip()
-            if position:
-                subject["position"] = position
-
-            action = str(kwargs.get(action_key, "")).strip()
-            if action:
-                subject["action"] = action
-
-            pose = str(kwargs.get(pose_key, "")).strip()
-            if pose:
-                subject["pose"] = pose
-
-            color_palette = self._parse_color_palette_string(kwargs.get(color_key, ""))
-            if color_palette:
-                subject["color_palette"] = color_palette
-
-            subjects.append(subject)
-
-        return subjects
-
-    def _build_color_palette(self, **kwargs) -> list:
-        """Build color palette array from hex color inputs."""
-        colors = []
-
-        for i in range(1, 6):
-            color_key = f"color_hex_{i}"
-            color = str(kwargs.get(color_key, "")).strip()
-
-            if color:
-                if not color.startswith("#"):
-                    color = "#" + color
-                colors.append(color)
-
-        return colors
-
-    def _safe_int(self, value, default: int, min_val: int = None, max_val: int = None) -> int:
-        """Safely convert value to int; on failure, return default and clamp to [min_val, max_val]."""
-        try:
-            i = int(value)
-        except (TypeError, ValueError):
-            i = default
-        if min_val is not None and i < min_val:
-            i = min_val
-        if max_val is not None and i > max_val:
-            i = max_val
-        return i
-
-    def _build_camera_dict(self, preset_settings: Dict, **kwargs) -> dict:
-        """Build camera configuration dictionary."""
-        camera = {}
-
-        # Camera angle
-        angle = self._get_value_or_override(
-            kwargs.get("camera_angle_preset", "None"),
-            kwargs.get("camera_angle_text_override", "")
-        )
-        if angle and "(" in angle:
-            angle = angle.split("(")[0].strip()
-        if angle:
-            camera["angle"] = angle
-
-        # Camera distance
-        distance = self._get_value_or_override(
-            kwargs.get("camera_distance_preset", "None"),
-            kwargs.get("camera_distance_text_override", "")
-        )
-        if distance and "(" in distance:
-            distance = distance.split("(")[0].strip()
-        if distance:
-            camera["distance"] = distance
-
-        # Focus
-        focus = self._get_value_or_override(
-            kwargs.get("focus_preset", "None"),
-            kwargs.get("focus_text_override", "")
-        )
-        if focus and "(" in focus:
-            focus = focus.split("(")[0].strip()
-        if focus:
-            camera["focus"] = focus
-
-        # Lens
-        lens = self._get_value_or_override(
-            kwargs.get("lens_preset", "None"),
-            kwargs.get("lens_text_override", "")
-        )
-        if lens and "(" in lens:
-            lens = lens.split("(")[0].strip()
-        if lens:
-            camera["lens"] = lens
-
-        # Lens mm (from preset or manual input)
-        lens_mm = kwargs.get("lens_mm", 0)
-        lens_mm = self._safe_int(lens_mm, preset_settings.get("lens_mm", 0), 0, 600)
-        if lens_mm > 0:
-            camera["lens-mm"] = lens_mm
-
-        # F-number (from preset or manual)
-        f_number = self._get_value_or_override(
-            kwargs.get("f_number_preset", "None"),
-            kwargs.get("f_number_text_override", "")
-        )
-        if not f_number and preset_settings.get("f_number"):
-            f_number = preset_settings["f_number"]
-        if f_number and "(" in f_number:
-            f_number = f_number.split("(")[0].strip()
-        if f_number:
-            camera["f-number"] = f_number
-
-        # ISO (from preset or manual)
-        iso = self._get_value_or_override(
-            kwargs.get("iso_preset", "None"),
-            kwargs.get("iso_text_override", "")
-        )
-        if not iso and preset_settings.get("iso"):
-            iso = preset_settings["iso"]
-        if iso and "(" in iso:
-            iso = iso.split("(")[0].strip()
-        if iso:
-            camera["ISO"] = int(iso) if str(iso).isdigit() else iso
-
-        # Shutter speed
-        shutter = str(kwargs.get("shutter_speed", "")).strip()
-        if shutter:
-            camera["shutter_speed"] = shutter
-
-        return camera
-
-    # ===== Main execution =====
+    # ===== Main =====
 
     def generate_json_prompt(
         self,
@@ -1841,26 +1737,37 @@ class FLUX2JSONPromptGenerator:
         color_hex_4: str, color_hex_5: str,
         include_shot_on_prefix: bool, enable_prompt_expansion: bool,
         **optional_kwargs
-    ) -> Tuple[str, str, str]:
-        """
-        Generate FLUX.2 JSON prompt from inputs.
-
-        Returns:
-            Tuple of (json_string, formatted_prompt_string, camera_settings_summary)
-        """
+    ) -> Tuple[str, str, str, str]:
 
         try:
-            # Apply camera preset
             preset_settings = self._apply_camera_preset(camera_preset)
 
-            # Safely parse subject_count and lens_mm
+            # Apply camera presets as defaults when per-field controls are unset
+            if not str(lens_mm).strip() or str(lens_mm).strip() == "0":
+                if preset_settings.get("lens_mm", 0) > 0:
+                    lens_mm = str(preset_settings["lens_mm"])
+            if not f_number_text_override or not str(f_number_text_override).strip():
+                if (not f_number_preset) or f_number_preset in ("", "None"):
+                    if preset_settings.get("f_number"):
+                        f_number_preset = preset_settings["f_number"]
+            if not iso_text_override or not str(iso_text_override).strip():
+                if (not iso_preset) or iso_preset in ("", "None"):
+                    if preset_settings.get("iso"):
+                        iso_preset = str(preset_settings["iso"])
+
+            # Resolve active camera_model once
+            camera_model = str(camera_model_text_override).strip() if camera_model_text_override else ""
+            if not camera_model and preset_settings.get("camera_model"):
+                camera_model = preset_settings["camera_model"]
+            elif not camera_model and camera_model_preset not in ("", "None", None):
+                camera_model = camera_model_preset
+
             subject_count_int = self._safe_int(subject_count, 1, 0, 10)
             lens_mm_int = self._safe_int(lens_mm, preset_settings.get("lens_mm", 0), 0, 600)
 
-            # Build the prompt dictionary
             prompt_dict: Dict[str, Any] = {}
 
-            # Scene (with preset support)
+            # Scene
             scene_text = str(scene).strip()
             if not scene_text and scene_preset not in ("", "Custom scene description", None):
                 scene_text = scene_preset
@@ -1885,7 +1792,7 @@ class FLUX2JSONPromptGenerator:
             if style:
                 prompt_dict["style"] = style
 
-            # Color Palette
+            # Palette
             colors = self._build_color_palette(
                 color_hex_1=color_hex_1,
                 color_hex_2=color_hex_2,
@@ -1908,7 +1815,7 @@ class FLUX2JSONPromptGenerator:
             if mood:
                 prompt_dict["mood"] = mood
 
-            # Background (with preset support)
+            # Background
             background_text = str(background).strip()
             if not background_text and background_preset not in ("", "Custom background", None):
                 background_text = background_preset
@@ -1922,7 +1829,7 @@ class FLUX2JSONPromptGenerator:
             if composition:
                 prompt_dict["composition"] = composition
 
-            # Camera
+            # Camera dict
             camera_kwargs = {
                 "camera_angle_preset": camera_angle_preset,
                 "camera_angle_text_override": camera_angle_text_override,
@@ -1943,71 +1850,51 @@ class FLUX2JSONPromptGenerator:
             if camera:
                 prompt_dict["camera"] = camera
 
+            # Ensure camera_model is stored in JSON under camera
+            if camera_model:
+                if "camera" not in prompt_dict:
+                    prompt_dict["camera"] = {}
+                prompt_dict["camera"]["camera_model"] = camera_model
+
             # Additional JSON fields
             additional_json = str(optional_kwargs.get("additional_json_fields", "")).strip()
             if additional_json:
                 try:
-                    additional_dict = json.loads(additional_json)
-                    if isinstance(additional_dict, dict):
-                        prompt_dict.update(additional_dict)
+                    extra = json.loads(additional_json)
+                    if isinstance(extra, dict):
+                        prompt_dict.update(extra)
                 except json.JSONDecodeError as e:
-                    print(f"[FLUX2JSONPromptGenerator] Warning: Could not parse additional_json_fields: {e}")
+                    print(f"[FLUX2JSONPromptGenerator] Warning: cannot parse additional_json_fields: {e}")
 
-            # Generate JSON string
             json_string = json.dumps(prompt_dict, indent=2, ensure_ascii=False)
 
-            # Generate formatted text prompt
+            # Build formatted_prompt
             formatted_parts = []
-
-            # Camera model (from preset or manual)
-            camera_model = str(camera_model_text_override).strip() if camera_model_text_override else ""
-            if not camera_model and preset_settings.get("camera_model"):
-                camera_model = preset_settings["camera_model"]
-            elif not camera_model and camera_model_preset not in ("", "None", None):
-                camera_model = camera_model_preset
-
             if camera_model and include_shot_on_prefix:
                 formatted_parts.append(f"Shot on {camera_model}")
-
-            # Style
             if style:
                 formatted_parts.append(style)
-
-            # Scene
             if scene_text:
                 formatted_parts.append(scene_text)
-
-            # Subjects
-            for i, subject in enumerate(subjects, 1):
-                subject_parts = [subject.get("description", "")]
+            for subject in subjects:
+                s_parts = [subject.get("description", "")]
                 if subject.get("position"):
-                    subject_parts.append(f"positioned at {subject['position']}")
+                    s_parts.append(f"positioned at {subject['position']}")
                 if subject.get("action"):
-                    subject_parts.append(subject["action"])
+                    s_parts.append(subject["action"])
                 if subject.get("pose"):
-                    subject_parts.append(subject["pose"])
-                formatted_parts.append(", ".join([p for p in subject_parts if p]))
-
-            # Lighting
+                    s_parts.append(subject["pose"])
+                formatted_parts.append(", ".join([p for p in s_parts if p]))
             if lighting:
                 formatted_parts.append(f"Lighting: {lighting}")
-
-            # Mood
             if mood:
                 formatted_parts.append(f"Mood: {mood}")
-
-            # Background
             if background_text:
                 formatted_parts.append(f"Background: {background_text}")
-
-            # Composition
             if composition:
                 formatted_parts.append(f"Composition: {composition}")
-
-            # Colors
             if colors:
                 formatted_parts.append(f"Color palette: {', '.join(colors)}")
-
             formatted_prompt = ". ".join(formatted_parts)
             if formatted_prompt and not formatted_prompt.endswith("."):
                 formatted_prompt += "."
@@ -2030,20 +1917,28 @@ class FLUX2JSONPromptGenerator:
                 camera_summary_parts.append(f"Angle: {camera['angle']}")
             if camera.get("distance"):
                 camera_summary_parts.append(f"Distance: {camera['distance']}")
-
             camera_settings = " | ".join(camera_summary_parts) if camera_summary_parts else "No camera settings specified"
 
-            # NEW: CLIP-friendly JSON-to-text prompt
+            # CLIP-safe JSON-to-text prompt
             json_to_clip_prompt = self._build_clip_friendly_prompt_from_dict(prompt_dict)
+
             return (json_string, formatted_prompt, camera_settings, json_to_clip_prompt)
 
         except Exception as e:
-            error_msg = f"Error generating JSON prompt: {str(e)}"
             import traceback
             traceback.print_exc()
+            error_msg = f"Error generating JSON prompt: {str(e)}"
             print(f"[FLUX2JSONPromptGenerator] {error_msg}")
             return (json.dumps({"error": error_msg}), error_msg, error_msg, error_msg)
 
+
+NODE_CLASS_MAPPINGS = {
+    "FLUX2JSONPromptGenerator": FLUX2JSONPromptGenerator
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "FLUX2JSONPromptGenerator": "FLUX.2 JSON Prompt Generator (Enhanced)"
+}
 
 
 
