@@ -72,6 +72,8 @@ import comfy.utils
 import torch.nn.functional as F
 import comfy
 import math
+
+from comfy.comfy_types import IO, InputTypeDict, ComfyNodeABC
 from comfy.samplers import KSAMPLER
 from comfy.samplers import KSAMPLER
 import comfy.utils
@@ -1500,8 +1502,8 @@ class FLUX2JSONPromptGenerator:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("json_prompt", "formatted_prompt", "camera_settings")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("json_prompt", "formatted_prompt", "camera_settings", "json_to_clip_prompt")
     FUNCTION = "generate_json_prompt"
     CATEGORY = "FLUX2/Prompt Generation"
     OUTPUT_NODE = False
@@ -1540,6 +1542,104 @@ class FLUX2JSONPromptGenerator:
                 settings["iso"] = token.replace("ISO", "")
 
         return settings
+    def _build_clip_friendly_prompt_from_dict(self, data: Dict[str, Any]) -> str:
+        """
+        Build a CLIP-safe descriptive prompt from a FLUX.2 JSON dict.
+        Mirrors the JSON->text logic used in the patched CLIPTextEncode node,
+        but runs here so the node can directly output a ready-to-use string.
+        """
+        parts: list[str] = []
+
+        scene = data.get("scene")
+        if isinstance(scene, str) and scene.strip():
+            parts.append(scene.strip())
+
+        subjects = data.get("subjects", [])
+        if isinstance(subjects, list) and subjects:
+            for idx, s in enumerate(subjects, 1):
+                if not isinstance(s, dict):
+                    continue
+                desc = s.get("description", "")
+                pos = s.get("position", "")
+                action = s.get("action", "") or s.get("pose", "")
+                colors = s.get("color_palette") or s.get("colors")
+                subject_fragments = []
+                if desc:
+                    subject_fragments.append(desc)
+                if pos:
+                    subject_fragments.append(f"positioned {pos}")
+                if action:
+                    subject_fragments.append(action)
+                if colors and isinstance(colors, list) and colors:
+                    subject_fragments.append(
+                        "colors " + ", ".join(str(c) for c in colors if c)
+                    )
+                if subject_fragments:
+                    parts.append(f"Subject {idx}: " + ", ".join(subject_fragments))
+
+        style = data.get("style")
+        if isinstance(style, str) and style.strip():
+            parts.append(style.strip())
+
+        color_palette = data.get("color_palette") or data.get("color_scheme")
+        if isinstance(color_palette, list) and color_palette:
+            colors_text = ", ".join(str(c) for c in color_palette if c)
+            if colors_text:
+                parts.append(f"Color palette: {colors_text}")
+
+        lighting = data.get("lighting")
+        if isinstance(lighting, str) and lighting.strip():
+            parts.append("Lighting: " + lighting.strip())
+
+        mood = data.get("mood")
+        if isinstance(mood, str) and mood.strip():
+            parts.append("Mood: " + mood.strip())
+
+        background = data.get("background")
+        if isinstance(background, str) and background.strip():
+            parts.append("Background: " + background.strip())
+
+        composition = data.get("composition")
+        if isinstance(composition, str) and composition.strip():
+            # drop any explanatory parenthesis to keep it compact
+            parts.append("Composition: " + composition.split("(")[0].strip())
+
+        camera = data.get("camera")
+        if isinstance(camera, dict):
+            cam_parts = []
+            angle = camera.get("angle")
+            distance = camera.get("distance")
+            focus = camera.get("focus") or camera.get("depth_of_field")
+            lens = camera.get("lens")
+            lens_mm = camera.get("lens-mm")
+            fnum = camera.get("f-number")
+            iso = camera.get("ISO")
+
+            if angle:
+                cam_parts.append(angle)
+            if distance:
+                cam_parts.append(distance)
+            if focus:
+                cam_parts.append(focus)
+            if lens:
+                cam_parts.append(lens)
+            if lens_mm:
+                cam_parts.append(f"{lens_mm}mm")
+            if fnum:
+                cam_parts.append(fnum)
+            if iso:
+                cam_parts.append(f"ISO {iso}")
+
+            if cam_parts:
+                parts.append("Camera: " + ", ".join(str(c) for c in cam_parts if c))
+
+        if not parts:
+            return ""
+
+        prompt = ". ".join(parts)
+        if not prompt.endswith("."):
+            prompt += "."
+        return prompt
 
     def _get_value_or_override(
         self,
@@ -1933,14 +2033,18 @@ class FLUX2JSONPromptGenerator:
 
             camera_settings = " | ".join(camera_summary_parts) if camera_summary_parts else "No camera settings specified"
 
-            return (json_string, formatted_prompt, camera_settings)
+            # NEW: CLIP-friendly JSON-to-text prompt
+            json_to_clip_prompt = self._build_clip_friendly_prompt_from_dict(prompt_dict)
+            return (json_string, formatted_prompt, camera_settings, json_to_clip_prompt)
 
         except Exception as e:
             error_msg = f"Error generating JSON prompt: {str(e)}"
             import traceback
             traceback.print_exc()
             print(f"[FLUX2JSONPromptGenerator] {error_msg}")
-            return (json.dumps({"error": error_msg}), error_msg, error_msg)
+            return (json.dumps({"error": error_msg}), error_msg, error_msg, error_msg)
+
+
 
 
 
@@ -1964,6 +2068,8 @@ NODE_CLASS_MAPPINGS = {
     "TBG_Preview_Sender_WebSocked": TBG_Preview_Sender_WebSocked,
     "HexConeDenoiseMask": HexConeDenoiseMask,
     "FLUX2JSONPromptGenerator": FLUX2JSONPromptGenerator
+
+
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
