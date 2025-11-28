@@ -1941,7 +1941,6 @@ import comfy.sample
 import comfy.utils
 from comfy_extras.nodes_custom_sampler import Noise_EmptyNoise, Noise_RandomNoise
 
-
 class TBGFluxZImagesSampler:
     @classmethod
     def INPUT_TYPES(s):
@@ -2144,22 +2143,43 @@ class TBGFluxZImagesSampler:
             low_raw, split_val, sigma_min_l, "LOW_part"
         )
 
-        sigmas_high_part = high_norm
-        sigmas_low_part = low_norm * sigma_multiplier
+        # ensure at least 3 sigmas (2 steps) per segment using interpolation only
+        def _ensure_min_sigmas_interp(seg, start_val, end_val, label):
+            n = seg.numel()
+            if n >= 3:
+                return seg
+            # regenerate segment as 3 evenly spaced sigmas between start_val and end_val
+            device = seg.device if n > 0 else s_h.device
+            out = torch.linspace(
+                float(start_val),
+                float(end_val),
+                steps=3,
+                device=device,
+                dtype=torch.float32,
+            )
+            print(f"[TBG] {label}: had {n} sigmas, reinterp to 3: {out.tolist()}")
+            return out
+
+        sigmas_high_part = _ensure_min_sigmas_interp(
+            high_norm, sigma_max_h, split_val, "HIGH_part"
+        )
+        sigmas_low_part = _ensure_min_sigmas_interp(
+            low_norm, split_val, sigma_min_l, "LOW_part"
+        ) * sigma_multiplier
 
         print(f"[TBG] sigmas_high_part final len={sigmas_high_part.numel()} "
               f"sigmas={sigmas_high_part.tolist()}")
         print(f"[TBG] sigmas_low_part final len={sigmas_low_part.numel()} "
               f"sigmas={sigmas_low_part.tolist()}")
 
-        # 3) HIGH segment (high only) with cfg_high
+        # 3) HIGH segment with cfg_high
         out_high = self._run_custom(
             model_high, add_noise, noise_seed, cfg_high,
             positive_high, negative_high,
             sampler, sigmas_high_part, latent_image, "HIGH_part",
         )
 
-        # 4) LOW segment (low only) with cfg_low, no extra noise
+        # 4) LOW segment with cfg_low, no extra noise
         out_low = self._run_custom(
             model_low, False, noise_seed, cfg_low,
             positive_low, negative_low,
@@ -2168,6 +2188,7 @@ class TBGFluxZImagesSampler:
 
         print(f"[TBG] ===== High-Low Sampler end (mixed) =====")
         return (out_low,)
+
 
 
 
