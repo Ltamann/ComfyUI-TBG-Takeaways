@@ -1947,33 +1947,29 @@ class TBGFluxZImagesSampler:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model_flux": ("MODEL",),
-                "model_z": ("MODEL",),
+                "model_high": ("MODEL",),
+                "model_low": ("MODEL",),
 
                 "add_noise": ("BOOLEAN", {"default": True}),
                 "noise_seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True}),
-                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
 
-                "positive_flux": ("CONDITIONING",),
-                "negative_flux": ("CONDITIONING",),
-                "positive_z": ("CONDITIONING",),
-                "negative_z": ("CONDITIONING",),
+                # separate CFGs
+                "cfg_high": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
+                "cfg_low":  ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
 
-                # SAMPLER object from KSamplerSelect
+                "positive_high": ("CONDITIONING",),
+                "negative_high": ("CONDITIONING",),
+                "positive_low": ("CONDITIONING",),
+                "negative_low": ("CONDITIONING",),
+
                 "sampler": ("SAMPLER",),
-
-                # scheduler name, same as BasicScheduler
                 "scheduler": (comfy.samplers.KSampler.SCHEDULERS,),
 
-                "steps_flux": ("INT", {"default": 20, "min": 1, "max": 2048}),
-                "steps_z": ("INT", {"default": 9, "min": 1, "max": 2048}),
-
-                # same semantics as BasicScheduler
+                "steps_high": ("INT", {"default": 20, "min": 1, "max": 2048}),
+                "steps_low":  ("INT", {"default": 9,  "min": 1, "max": 2048}),
                 "denoise": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
 
-                # logical split in sigma-space: 0 -> only Flux, 1 -> only Z
                 "sigma_split_value": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
-                # multiplier for low Z sigmas after normalization
                 "sigma_multiplier": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.01}),
             },
             "optional": {
@@ -2006,22 +2002,22 @@ class TBGFluxZImagesSampler:
 
     # ---------- split helpers --------------------------------------------
 
-    def _split_flux_high(self, sigmas, split_val):
+    def _split_high_part(self, sigmas, split_val):
         s = sigmas.float()
         mask_high = s > split_val
         idxs = torch.nonzero(mask_high, as_tuple=False).flatten().tolist()
-        print(f"[TBG] Flux high mask (> {split_val}): indices={idxs}")
+        print(f"[TBG] HIGH mask (> {split_val}): indices={idxs}")
         high = s[mask_high]
-        print(f"[TBG] Flux high_raw len={high.numel()} sigmas={high.tolist()}")
+        print(f"[TBG] HIGH_raw len={high.numel()} sigmas={high.tolist()}")
         return high
 
-    def _split_z_low(self, sigmas, split_val):
+    def _split_low_part(self, sigmas, split_val):
         s = sigmas.float()
         mask_low = s <= split_val
         idxs = torch.nonzero(mask_low, as_tuple=False).flatten().tolist()
-        print(f"[TBG] Z low mask (<= {split_val}): indices={idxs}")
+        print(f"[TBG] LOW mask (<= {split_val}): indices={idxs}")
         low = s[mask_low]
-        print(f"[TBG] Z low_raw len={low.numel()} sigmas={low.tolist()}")
+        print(f"[TBG] LOW_raw len={low.numel()} sigmas={low.tolist()}")
         return low
 
     def _normalize_segment(self, seg, start_val, end_val, label):
@@ -2077,19 +2073,20 @@ class TBGFluxZImagesSampler:
 
     def sample(
         self,
-        model_flux,
-        model_z,
+        model_high,
+        model_low,
         add_noise,
         noise_seed,
-        cfg,
-        positive_flux,
-        negative_flux,
-        positive_z,
-        negative_z,
+        cfg_high,
+        cfg_low,
+        positive_high,
+        negative_high,
+        positive_low,
+        negative_low,
         sampler,
         scheduler,
-        steps_flux,
-        steps_z,
+        steps_high,
+        steps_low,
         denoise,
         sigma_split_value,
         sigma_multiplier,
@@ -2098,325 +2095,79 @@ class TBGFluxZImagesSampler:
         if latent_image is None:
             raise ValueError("TBG Flux-Z-Images Sampler requires a latent_image input.")
 
-        print(f"[TBG] ===== Flux-Z Sampler start =====")
-        print(f"[TBG] steps_flux={steps_flux} steps_z={steps_z} "
+        print(f"[TBG] ===== High-Low Sampler start =====")
+        print(f"[TBG] steps_high={steps_high} steps_low={steps_low} "
               f"denoise={denoise} sigma_split_value={sigma_split_value} "
-              f"sigma_multiplier={sigma_multiplier}")
+              f"sigma_multiplier={sigma_multiplier} cfg_high={cfg_high} cfg_low={cfg_low}")
 
-        # 1) sigmas exactly like BasicScheduler
-        sigmas_flux = self._get_sigmas_basic(model_flux, scheduler, steps_flux, denoise, "Flux")
-        sigmas_z = self._get_sigmas_basic(model_z, scheduler, steps_z, denoise, "Z")
+        # 1) sigmas like BasicScheduler
+        sigmas_high = self._get_sigmas_basic(model_high, scheduler, steps_high, denoise, "HIGH")
+        sigmas_low = self._get_sigmas_basic(model_low, scheduler, steps_low, denoise, "LOW")
 
-        # edge: split=0 -> only Flux; split=1 -> only Z
+        # edge: split=0 -> only HIGH; split=1 -> only LOW
         if sigma_split_value <= 0.0:
-            print("[TBG] split=0 -> Flux only (full BasicScheduler sigmas), skip Z")
-            out_flux = self._run_custom(
-                model_flux, add_noise, noise_seed, cfg,
-                positive_flux, negative_flux,
-                sampler, sigmas_flux, latent_image, "Flux_full",
+            print("[TBG] split=0 -> HIGH only (full sigmas), skip LOW")
+            out_high = self._run_custom(
+                model_high, add_noise, noise_seed, cfg_high,
+                positive_high, negative_high,
+                sampler, sigmas_high, latent_image, "HIGH_full",
             )
-            print(f"[TBG] ===== Flux-Z Sampler end (Flux only) =====")
-            return (out_flux,)
+            print(f"[TBG] ===== High-Low Sampler end (HIGH only) =====")
+            return (out_high,)
 
         if sigma_split_value >= 1.0:
-            print("[TBG] split=1 -> Z only (full BasicScheduler sigmas), skip Flux")
-            out_z = self._run_custom(
-                model_z, add_noise, noise_seed, cfg,
-                positive_z, negative_z,
-                sampler, sigmas_z, latent_image, "Z_full",
+            print("[TBG] split=1 -> LOW only (full sigmas), skip HIGH")
+            out_low = self._run_custom(
+                model_low, add_noise, noise_seed, cfg_low,
+                positive_low, negative_low,
+                sampler, sigmas_low, latent_image, "LOW_full",
             )
-            print(f"[TBG] ===== Flux-Z Sampler end (Z only) =====")
-            return (out_z,)
+            print(f"[TBG] ===== High-Low Sampler end (LOW only) =====")
+            return (out_low,)
 
-        # 2) mixed: Flux high (>split), Z low (<=split)
-        s_f = sigmas_flux.float()
-        s_z = sigmas_z.float()
-        sigma_max_f = s_f[0]
-        sigma_min_z = s_z[-1]
+        # 2) mixed: HIGH part (>split), LOW part (<=split)
+        s_h = sigmas_high.float()
+        s_l = sigmas_low.float()
+        sigma_max_h = s_h[0]
+        sigma_min_l = s_l[-1]
         split_val = float(sigma_split_value)
 
-        print(f"[TBG] sigma_max_flux={float(sigma_max_f)} sigma_min_z={float(sigma_min_z)}")
+        print(f"[TBG] sigma_max_high={float(sigma_max_h)} sigma_min_low={float(sigma_min_l)}")
 
-        flux_high_raw = self._split_flux_high(s_f, split_val)
-        z_low_raw = self._split_z_low(s_z, split_val)
+        high_raw = self._split_high_part(s_h, split_val)
+        low_raw = self._split_low_part(s_l, split_val)
 
-        flux_high_norm = self._normalize_segment(
-            flux_high_raw, sigma_max_f, split_val, "Flux_high"
+        high_norm = self._normalize_segment(
+            high_raw, sigma_max_h, split_val, "HIGH_part"
         )
-        z_low_norm = self._normalize_segment(
-            z_low_raw, split_val, sigma_min_z, "Z_low"
-        )
-
-        sigmas_flux_high = flux_high_norm
-        sigmas_z_low = z_low_norm * sigma_multiplier
-
-        print(f"[TBG] sigmas_flux_high final len={sigmas_flux_high.numel()} "
-              f"sigmas={sigmas_flux_high.tolist()}")
-        print(f"[TBG] sigmas_z_low final len={sigmas_z_low.numel()} "
-              f"sigmas={sigmas_z_low.tolist()}")
-
-        # 3) Flux segment (high only)
-        out_flux = self._run_custom(
-            model_flux, add_noise, noise_seed, cfg,
-            positive_flux, negative_flux,
-            sampler, sigmas_flux_high, latent_image, "Flux_high",
+        low_norm = self._normalize_segment(
+            low_raw, split_val, sigma_min_l, "LOW_part"
         )
 
-        # 4) Z segment (low only), no extra noise
-        out_z = self._run_custom(
-            model_z, False, noise_seed, cfg,
-            positive_z, negative_z,
-            sampler, sigmas_z_low, out_flux, "Z_low",
+        sigmas_high_part = high_norm
+        sigmas_low_part = low_norm * sigma_multiplier
+
+        print(f"[TBG] sigmas_high_part final len={sigmas_high_part.numel()} "
+              f"sigmas={sigmas_high_part.tolist()}")
+        print(f"[TBG] sigmas_low_part final len={sigmas_low_part.numel()} "
+              f"sigmas={sigmas_low_part.tolist()}")
+
+        # 3) HIGH segment (high only) with cfg_high
+        out_high = self._run_custom(
+            model_high, add_noise, noise_seed, cfg_high,
+            positive_high, negative_high,
+            sampler, sigmas_high_part, latent_image, "HIGH_part",
         )
 
-        print(f"[TBG] ===== Flux-Z Sampler end (mixed) =====")
-        return (out_z,)
-
-
-import torch
-import comfy.samplers
-import comfy.model_management as mm
-import comfy.sample
-import comfy.utils
-from comfy_extras.nodes_custom_sampler import Noise_EmptyNoise, Noise_RandomNoise
-
-
-class TBGFluxZImagesSampler:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "model_flux": ("MODEL",),
-                "model_z": ("MODEL",),
-
-                "add_noise": ("BOOLEAN", {"default": True}),
-                "noise_seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True}),
-                "cfg": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01}),
-
-                "positive_flux": ("CONDITIONING",),
-                "negative_flux": ("CONDITIONING",),
-                "positive_z": ("CONDITIONING",),
-                "negative_z": ("CONDITIONING",),
-
-                # SAMPLER object from KSamplerSelect
-                "sampler": ("SAMPLER",),
-
-                # scheduler name, same as BasicScheduler
-                "scheduler": (comfy.samplers.KSampler.SCHEDULERS,),
-
-                "steps_flux": ("INT", {"default": 20, "min": 1, "max": 2048}),
-                "steps_z": ("INT", {"default": 9, "min": 1, "max": 2048}),
-
-                # same semantics as BasicScheduler
-                "denoise": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
-
-                # logical split in sigma-space: 0 -> only Flux, 1 -> only Z
-                "sigma_split_value": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
-                # multiplier for low Z sigmas after normalization
-                "sigma_multiplier": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.01}),
-
-                "latent_image": ("LATENT",),
-            }
-        }
-
-    RETURN_TYPES = ("LATENT",)
-    RETURN_NAMES = ("output",)
-    FUNCTION = "sample"
-    CATEGORY = "TBG/Takeaways"
-
-    # ---------- BasicScheduler-equivalent sigmas -------------------------
-
-    def _get_sigmas_basic(self, model, scheduler, steps, denoise, label):
-        total_steps = steps
-        if denoise < 1.0:
-            if denoise <= 0.0:
-                print(f"[TBG] _get_sigmas_basic {label}: denoise<=0 -> empty")
-                return torch.FloatTensor([])
-            total_steps = int(steps / denoise)
-
-        sigmas_full = comfy.samplers.calculate_sigmas(
-            model.get_model_object("model_sampling"), scheduler, total_steps
-        ).cpu()
-        sigmas = sigmas_full[-(steps + 1):]
-        print(f"[TBG] _get_sigmas_basic {label}: steps={steps} denoise={denoise} "
-              f"total_steps={total_steps} len={len(sigmas)} sigmas={sigmas.tolist()}")
-        return sigmas
-
-    # ---------- split helpers --------------------------------------------
-
-    def _split_flux_high(self, sigmas, split_val):
-        s = sigmas.float()
-        mask_high = s > split_val
-        idxs = torch.nonzero(mask_high, as_tuple=False).flatten().tolist()
-        print(f"[TBG] Flux high mask (> {split_val}): indices={idxs}")
-        high = s[mask_high]
-        print(f"[TBG] Flux high_raw len={high.numel()} sigmas={high.tolist()}")
-        return high
-
-    def _split_z_low(self, sigmas, split_val):
-        s = sigmas.float()
-        mask_low = s <= split_val
-        idxs = torch.nonzero(mask_low, as_tuple=False).flatten().tolist()
-        print(f"[TBG] Z low mask (<= {split_val}): indices={idxs}")
-        low = s[mask_low]
-        print(f"[TBG] Z low_raw len={low.numel()} sigmas={low.tolist()}")
-        return low
-
-    def _normalize_segment(self, seg, start_val, end_val, label):
-        if seg.numel() == 0:
-            print(f"[TBG] normalize_segment {label}: empty segment")
-            return seg
-        if seg.numel() == 1:
-            out = torch.tensor([start_val], device=seg.device, dtype=seg.dtype)
-            print(f"[TBG] normalize_segment {label}: single, out={out.tolist()}")
-            return out
-        t = torch.linspace(0.0, 1.0, seg.numel(), device=seg.device)
-        out = start_val + (end_val - start_val) * t
-        print(f"[TBG] normalize_segment {label}: start={float(start_val)} end={float(end_val)} "
-              f"len={seg.numel()} out={out.tolist()}")
-        return out
-
-    # ---------- SamplerCustom-compatible run -----------------------------
-
-    def _run_custom(self, model, add_noise, noise_seed, cfg,
-                    positive, negative, sampler, sigmas, latent, label):
-        print(f"[TBG] START sampler {label}: add_noise={add_noise} seed={noise_seed} "
-              f"cfg={cfg} steps={sigmas.numel()-1} sigmas_len={sigmas.numel()} "
-              f"first={float(sigmas[0]) if sigmas.numel()>0 else 'NA'} "
-              f"last={float(sigmas[-1]) if sigmas.numel()>0 else 'NA'}")
-        latent = latent.copy()
-        latent_image = latent["samples"]
-        latent_image = comfy.sample.fix_empty_latent_channels(model, latent_image)
-        latent["samples"] = latent_image
-
-        if not add_noise:
-            noise = Noise_EmptyNoise().generate_noise(latent)
-        else:
-            noise = Noise_RandomNoise(noise_seed).generate_noise(latent)
-
-        noise_mask = latent.get("noise_mask", None)
-        disable_pbar = not comfy.utils.PROGRESS_BAR_ENABLED
-
-        samples = comfy.sample.sample_custom(
-            model, noise, cfg, sampler, sigmas,
-            positive, negative, latent_image,
-            noise_mask=noise_mask,
-            callback=None,
-            disable_pbar=disable_pbar,
-            seed=noise_seed,
+        # 4) LOW segment (low only) with cfg_low, no extra noise
+        out_low = self._run_custom(
+            model_low, False, noise_seed, cfg_low,
+            positive_low, negative_low,
+            sampler, sigmas_low_part, out_high, "LOW_part",
         )
 
-        out = latent.copy()
-        out["samples"] = samples
-        print(f"[TBG] END sampler {label}")
-        return out
-
-    # ---------- main -----------------------------------------------------
-
-    def sample(
-        self,
-        model_flux,
-        model_z,
-        add_noise,
-        noise_seed,
-        cfg,
-        positive_flux,
-        negative_flux,
-        positive_z,
-        negative_z,
-        sampler,
-        scheduler,
-        steps_flux,
-        steps_z,
-        denoise,
-        sigma_split_value,
-        sigma_multiplier,
-        latent_image=None,
-    ):
-        if latent_image is None:
-            raise ValueError("TBG Flux-Z-Images Sampler requires a latent_image input.")
-
-        print(f"[TBG] ===== Flux-Z Sampler start =====")
-        print(f"[TBG] steps_flux={steps_flux} steps_z={steps_z} "
-              f"denoise={denoise} sigma_split_value={sigma_split_value} "
-              f"sigma_multiplier={sigma_multiplier}")
-
-        # 1) sigmas exactly like BasicScheduler
-        sigmas_flux = self._get_sigmas_basic(model_flux, scheduler, steps_flux, denoise, "Flux")
-        sigmas_z = self._get_sigmas_basic(model_z, scheduler, steps_z, denoise, "Z")
-
-        # edge: split=0 -> only Flux; split=1 -> only Z
-        if sigma_split_value <= 0.0:
-            print("[TBG] split=0 -> Flux only (full BasicScheduler sigmas), skip Z")
-            out_flux = self._run_custom(
-                model_flux, add_noise, noise_seed, cfg,
-                positive_flux, negative_flux,
-                sampler, sigmas_flux, latent_image, "Flux_full",
-            )
-            print(f"[TBG] ===== Flux-Z Sampler end (Flux only) =====")
-            return (out_flux,)
-
-        if sigma_split_value >= 1.0:
-            print("[TBG] split=1 -> Z only (full BasicScheduler sigmas), skip Flux")
-            out_z = self._run_custom(
-                model_z, add_noise, noise_seed, cfg,
-                positive_z, negative_z,
-                sampler, sigmas_z, latent_image, "Z_full",
-            )
-            print(f"[TBG] ===== Flux-Z Sampler end (Z only) =====")
-            return (out_z,)
-
-        # 2) mixed: Flux high (>split), Z low (<=split)
-        s_f = sigmas_flux.float()
-        s_z = sigmas_z.float()
-        sigma_max_f = s_f[0]
-        sigma_min_z = s_z[-1]
-        split_val = float(sigma_split_value)
-
-        print(f"[TBG] sigma_max_flux={float(sigma_max_f)} sigma_min_z={float(sigma_min_z)}")
-
-        flux_high_raw = self._split_flux_high(s_f, split_val)
-        z_low_raw = self._split_z_low(s_z, split_val)
-
-        flux_high_norm = self._normalize_segment(
-            flux_high_raw, sigma_max_f, split_val, "Flux_high"
-        )
-        z_low_norm = self._normalize_segment(
-            z_low_raw, split_val, sigma_min_z, "Z_low"
-        )
-
-        sigmas_flux_high = flux_high_norm
-        sigmas_z_low = z_low_norm * sigma_multiplier
-
-        print(f"[TBG] sigmas_flux_high final len={sigmas_flux_high.numel()} "
-              f"sigmas={sigmas_flux_high.tolist()}")
-        print(f"[TBG] sigmas_z_low final len={sigmas_z_low.numel()} "
-              f"sigmas={sigmas_z_low.tolist()}")
-
-        # 3) Flux segment (high only)
-        out_flux = self._run_custom(
-            model_flux, add_noise, noise_seed, cfg,
-            positive_flux, negative_flux,
-            sampler, sigmas_flux_high, latent_image, "Flux_high",
-        )
-
-        # 4) Z segment (low only), no extra noise
-        out_z = self._run_custom(
-            model_z, False, noise_seed, cfg,
-            positive_z, negative_z,
-            sampler, sigmas_z_low, out_flux, "Z_low",
-        )
-
-        print(f"[TBG] ===== Flux-Z Sampler end (mixed) =====")
-        return (out_z,)
-
-
-
-
-
-
-
-
+        print(f"[TBG] ===== High-Low Sampler end (mixed) =====")
+        return (out_low,)
 
 
 
@@ -2434,7 +2185,8 @@ NODE_CLASS_MAPPINGS = {
     "TBG_Preview_Sender_WebSocked": TBG_Preview_Sender_WebSocked,
     "HexConeDenoiseMask": HexConeDenoiseMask,
     "FLUX2JSONPromptGenerator": FLUX2JSONPromptGenerator,
-    "TBG Flux-Z-Images Sampler": TBGFluxZImagesSampler
+    "TBG Flux-Z-Images Sampler": TBGFluxZImagesSampler,
+    "TBG Dual Sampler": TBGFluxZImagesSampler
 
 
 }
@@ -2451,6 +2203,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "TBG_Preview_Sender_WebSocked": "TBG Preview Sender (WebSocket)",
     "HexConeDenoiseMask": "TBG Hex Cone Mask",
     "FLUX2JSONPromptGenerator": "FLUX.2 JSON Prompt Generator",
-    "TBG Flux-Z-Images Sampler": "TBG Flux-Z-Images Sampler"
+    "TBG Flux-Z-Images Sampler": "TBG Flux-Z-Images Sampler",
+    "TBG Dual Sampler": "TBG Dual Sampler"
 }
 
