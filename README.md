@@ -17,6 +17,15 @@ A curated set of reusable ComfyUI nodes created by TGB, these sidecodes capture 
 ---
 
 ## Included Nodes
+- **TBG Dual Sampler** *(New!)*  
+  The TBG Dual Sampler enables sampling with both low- and high-step models. It allows you to specify separate prompts for low and high steps, choosing different models to control structure and detail in your image generation. The models must be compatible, sharing similar latent spaces or VAEs.  
+
+  Example working combinations:  
+  - Qwen + ControlNet and WAN 2.1-low as refiners  
+  - Flux1 + Z-Image  
+  - Chroma + Flux  
+  - Chroma + Z-Image
+
 - **VAE Decode ColorFix** *(New!)*  
   VAE Decode (ColorFix) - Fast, Color-Accurate Decoding for Flux Models
 Solves the brightness shift and washed-out color problem that affects Flux models 
