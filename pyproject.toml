@@ -18,7 +18,8 @@ PublisherId = "tbg"
 DisplayName = "ComfyUI-TBG-Takeaways"
 Icon = ""
 includes = [] 
-# "requires-comfyui" = ">=1.0.0"  # ComfyUI version compatibility.
+# "requires-comfyui" = ">=1.0.0"  # ComfyUI version compatibility
+
 
 
 
