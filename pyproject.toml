@@ -10,57 +10,7 @@ version = "1.0.5"
 license = { file = "LICENSE" }
 
 dependencies = [
-  "Jinja2==3.1.6",
-  "MarkupSafe==3.0.3",
-  "annotated-types==0.7.0",
-  "anyio==4.12.0",
-  "arrow==1.4.0",
-  "asgiref==3.11.0",
-  "binaryornot==0.4.4",
-  "certifi==2025.11.12",
-  "chardet==5.2.0",
-  "charset-normalizer==3.4.4",
-  "click==8.1.8",
-  "comfy-cli==1.5.3",
-  "cookiecutter==2.6.0",
-  "exceptiongroup==1.3.1",
-  "gitdb==4.0.12",
-  "GitPython==3.1.45",
-  "h11==0.16.0",
-  "httpcore==1.0.9",
-  "httpx==0.28.1",
-  "idna==3.11",
-  "markdown-it-py==4.0.0",
-  "mdurl==0.1.2",
-  "mixpanel==5.0.0",
-  "packaging==25.0",
-  "pathspec==0.12.1",
-  "prompt_toolkit==3.0.52",
-  "psutil==7.1.3",
-  "pydantic==2.12.5",
-  "pydantic-core==2.41.5",
-  "Pygments==2.19.2",
-  "python-dateutil==2.9.0.post0",
-  "python-slugify==8.0.4",
-  "PyYAML==6.0.3",
-  "questionary==2.1.1",
-  "requests==2.32.5",
-  "rich==14.2.0",
-  "ruff==0.14.7",
-  "semver==3.0.4",
-  "shellingham==1.5.4",
-  "six==1.17.0",
-  "smmap==5.0.2",
-  "text-unidecode==1.3.0",
-  "tomlkit==0.13.3",
-  "typer==0.20.0",
-  "typing-extensions==4.15.0",
-  "typing-inspection==0.4.2",
-  "tzdata==2025.2",
-  "urllib3==2.5.0",
-  "uv==0.9.13",
-  "wcwidth==0.2.14",
-  "websocket-client==1.9.0"
+  "# Core ComfyUI dependencies (already in ComfyUI, no need to reinstall)"
 ]
 
 [project.urls]
@@ -74,3 +24,4 @@ DisplayName = "ComfyUI-TBG-Takeaways"
 Icon = ""
 includes = [] 
 # "requires-comfyui" = ">=1.0.0"  # ComfyUI version compatibility
+
