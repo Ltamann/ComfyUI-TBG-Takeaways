@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = https://github.com/Ltamann/ComfyUI-TBG-Takeaways"
+Repository = "https://github.com/Ltamann/ComfyUI-TBG-Takeaways"
 Documentation = "https://github.com/Ltamann/ComfyUI-TBG-Takeaways/wiki"
 "Bug Tracker" = "https://github.com/Ltamann/ComfyUI-TBG-Takeaways/issues"
 
@@ -19,6 +19,7 @@ DisplayName = "ComfyUI-TBG-Takeaways"
 Icon = ""
 includes = [] 
 # "requires-comfyui" = ">=1.0.0"  # ComfyUI version compatibility.
+
 
 
 
