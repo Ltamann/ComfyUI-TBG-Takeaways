@@ -1,7 +1,7 @@
 [project]
 name = "ComfyUI-TBG-Takeaways"
 description = "A curated set of reusable ComfyUI nodes created by TBG. These sidecodes capture major advances in model sampling, noise scheduling, and image refinement to enhance Stable Diffusion workflows. All nodes in this pack are extracted from micro-developments created during the TBG ETUR project. They have been converted into standalone “micro nodes” for testing and for anyone interested in experimenting with advanced ComfyUI techniques."
-version = "1.0.0"
+version = "1.0.1"
 license = { file = "LICENSE" }
 
 dependencies = [
