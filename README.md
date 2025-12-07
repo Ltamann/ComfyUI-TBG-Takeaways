@@ -21,9 +21,9 @@ A curated set of reusable ComfyUI nodes created by TGB, these sidecodes capture 
 TBG Sampler - Now with split-aware and inpaint-aware sampling controls!
 
 - **TBG KSampler Advanced (Inpaint Split Aware)** *(New!)*  
-[infos here]([https://github.com/Ltamann/ComfyUI-TBG-ETUR](https://www.patreon.com/posts/true-diffusion-144805227))
+[infos here]([https://github.com/Ltamann/ComfyUI-TBG-ETUR](https://www.patreon.com/posts/true-diffusion-144805227)
 - **TBG Dual Model KSampler (Inpaint Split Aware)** *(New!)*  
-[infos here]([https://github.com/Ltamann/ComfyUI-TBG-ETUR](https://www.patreon.com/posts/true-diffusion-144805227))
+[infos here]([https://github.com/Ltamann/ComfyUI-TBG-ETUR](https://www.patreon.com/posts/true-diffusion-144805227)
 
   The TBG Dual Sampler enables sampling with both low- and high-step models. It allows you to specify separate prompts for low and high steps, choosing different models to control structure and detail in your image generation. The models must be compatible, sharing similar latent spaces or VAEs.  
 
