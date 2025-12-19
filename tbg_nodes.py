@@ -72,6 +72,7 @@ SOFTWARE.
 """
 import comfy.utils
 import latent_preview
+import torch
 import torch.nn.functional as F
 import comfy
 import math
@@ -1904,4 +1905,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "HexConeDenoiseMask": "TBG Hex Cone Mask",
     "FLUX2JSONPromptGenerator": "FLUX.2 JSON Prompt Generator"
 }
+
 
